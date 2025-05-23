@@ -20,13 +20,15 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\StockItemController;
+use App\Http\Controllers\MovementHistoryController;
 use App\Http\Controllers\WarehouseController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\ScanController;
+use Illuminate\Support\Facades\Auth;
 
 // Public routes
 Route::get('/', function () {
-    return auth()->check() ? redirect('/dashboard') : redirect('/login');
+    return Auth::check() ? redirect('/dashboard') : redirect('/login');
 });
 
 // Protected routes
@@ -77,13 +79,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     });
     
     // Audit Logs (Admin only)
-    Route::get('/audit-logs', function () {
-        $movements = \App\Models\MovementHistory::with(['product', 'location.warehouse', 'user'])
-            ->latest()
-            ->paginate(20);
-            
-        return Inertia::render('AuditLogs/Index', [
-            'movements' => $movements,
-        ]);
-    })->name('audit-logs')->middleware('permission:view-audit-logs');
+    Route::prefix('audit-logs')->name('audit-logs.')->group(function () {
+        Route::get('/', [MovementHistoryController::class, 'index'])->name('index');
+        Route::delete('/{id}', [MovementHistoryController::class, 'destroy'])->name('destroy');
+    });
 });
