@@ -23,10 +23,11 @@ use App\Http\Controllers\StockItemController;
 use App\Http\Controllers\WarehouseController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\ScanController;
+use Illuminate\Support\Facades\Auth;
 
 // Public routes
 Route::get('/', function () {
-    return auth()->check() ? redirect('/dashboard') : redirect('/login');
+    return Auth::check() ? redirect('/dashboard') : redirect('/login');
 });
 
 // Protected routes
