@@ -113,7 +113,7 @@ export default function WarehouseIndex({ warehouses, filters }: WarehouseIndexPr
         >
             <Head title="Warehouses" />
 
-            <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+            <div className="mx-auto max-w-7xl px-4 py-2 sm:px-6 lg:px-8">
                 <div className="mb-4 flex items-center justify-between bg-white px-4 py-4 shadow sm:rounded-xl">
                     <form onSubmit={handleFilter} className="flex space-x-2">
                         <input

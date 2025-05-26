@@ -38,13 +38,8 @@ export default function MovementHistoryIndex({ movements, filters }: MovementHis
             <Head title="Movement History" />
 
             {/* SOFT PASTEL GRADIENT BACKGROUND */}
-            <div
-                className="min-h-screen w-full py-8 px-2"
-                style={{
-                    background: 'linear-gradient(135deg, #f3f8fe 0%, #e0f7fa 60%, #f8f8fc 100%)'
-                }}
-            >
-                <div className="mx-auto max-w-7xl px-4 py-6">
+            <div>
+                <div className="mx-auto max-w-7xl px-4 py-2">
 
                     {/* SEARCH BAR */}
                     <div className="mb-4 flex items-center justify-between bg-white/90 p-4 shadow-lg sm:rounded-xl border border-blue-100">

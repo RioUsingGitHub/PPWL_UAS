@@ -94,13 +94,8 @@ export default function UsersIndex({ users, roles, filters }) {
             <Head title="Users" />
 
             {/* SOFT PASTEL GRADIENT BACKGROUND */}
-            <div
-                className="min-h-screen w-full py-8 px-2"
-                style={{
-                    background: 'linear-gradient(135deg, #f3f8fe 0%, #e0f7fa 60%, #f8f8fc 100%)'
-                }}
-            >
-                <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+            <div            >
+                <div className="mx-auto max-w-7xl px-4 py-2 sm:px-6 lg:px-8">
 
                     {/* FILTER BAR */}
                     <div className="mb-4 flex flex-col md:flex-row items-center justify-between bg-white/90 px-4 py-4 shadow-lg sm:rounded-xl border border-blue-100">

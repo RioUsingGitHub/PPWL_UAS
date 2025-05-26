@@ -69,10 +69,7 @@ export default function Dashboard({
             <Head title="Dashboard" />
 
             {/* Soft gradient background */}
-            <div className="py-12 min-h-screen"
-                 style={{
-                    background: 'linear-gradient(135deg, #f0f4ff 0%, #f8fafc 50%, #e0f7fa 100%)'
-                 }}>
+            <div className="py-2 min-h-screen">
                 <div className="max-w-7xl mx-auto sm:px-6 lg:px-8">
                     {/* Stats Cards */}
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">

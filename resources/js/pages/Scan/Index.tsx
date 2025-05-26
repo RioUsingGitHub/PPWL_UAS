@@ -96,12 +96,7 @@ export default function ScanIndex({ locations }) {
             <Head title="Scan" />
 
             {/* SOFT GRADIENT BACKGROUND */}
-            <div
-                className="py-12 min-h-screen"
-                style={{
-                    background: 'linear-gradient(135deg, #f3f8fe 0%, #e0f7fa 60%, #f8f8fc 100%)'
-                }}
-            >
+            <div>
                 <div className="max-w-4xl mx-auto sm:px-6 lg:px-8">
                     {/* CARD CONTAINER */}
                     <div className="bg-white/90 overflow-hidden shadow-xl sm:rounded-2xl border border-blue-100">

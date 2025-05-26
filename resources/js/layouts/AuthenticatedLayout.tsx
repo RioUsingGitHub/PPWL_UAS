@@ -86,17 +86,8 @@ export default function AuthenticatedLayout({ header, children }: Props) {
                     sidebarOpen ? 'block' : 'hidden'
                 }`}
             >
-                <div className="fixed inset-0 bg-gray-600 bg-opacity-75" onClick={() => setSidebarOpen(false)} />
-                <div className="relative flex w-full max-w-xs flex-1 flex-col bg-white">
-                    <div className="absolute top-0 right-0 -mr-12 pt-2">
-                        <button
-                            type="button"
-                            className="ml-1 flex h-10 w-10 items-center justify-center rounded-full focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
-                            onClick={() => setSidebarOpen(false)}
-                        >
-                            <XMarkIcon className="h-6 w-6 text-white" />
-                        </button>
-                    </div>
+                <div className="fixed inset-0 bg-gray-600/40 bg-opacity-75" onClick={() => setSidebarOpen(false)} />
+                <div className="relative flex w-full max-w-xs h-full flex-1 flex-col bg-white">
                     <div className="flex flex-1 flex-col overflow-y-auto pt-5 pb-4">
                         <div className="flex flex-shrink-0 items-center px-4">
                             <h1 className="text-xl font-bold text-gray-900">Inventory</h1>
@@ -204,7 +195,7 @@ export default function AuthenticatedLayout({ header, children }: Props) {
 
                 {/* Page header */}
                 {header && (
-                    <header className="bg-white shadow">
+                    <header className="bg-transparent">
                         <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
                             {header}
                         </div>
