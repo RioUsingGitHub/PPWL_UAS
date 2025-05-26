@@ -41,7 +41,7 @@ export default function WarehouseIndex({ warehouses, filters }: WarehouseIndexPr
         code: '',
         address: '',
         phone: '',
-        is_active: true,
+        is_active: true as boolean,
     });
 
     const handleCheckboxChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -157,7 +157,7 @@ export default function WarehouseIndex({ warehouses, filters }: WarehouseIndexPr
                             {warehouses?.data?.map((warehouse) => (
                                 <tr key={warehouse.id} className={!warehouse.is_active ? 'bg-gray-50' : ''}>
                                     <td className="px-6 py-4 whitespace-nowrap font-semibold">{warehouse.name}</td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-mono bg-gray-100 rounded px-2 py-1">{warehouse.code}</td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-mono bg-gray-100 rounded">{warehouse.code}</td>
                                     <td className="px-6 py-4 whitespace-nowrap">{warehouse.address || '-'}</td>
                                     <td className="px-6 py-4 whitespace-nowrap">{warehouse.phone || '-'}</td>
                                     <td className="px-6 py-4 whitespace-nowrap">
