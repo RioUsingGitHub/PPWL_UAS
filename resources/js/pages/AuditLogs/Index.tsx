@@ -27,74 +27,116 @@ export default function MovementHistoryIndex({ movements, filters }: MovementHis
     };
 
     return (
-        <AuthenticatedLayout header={<h2 className="text-xl font-semibold text-gray-800">Movement History</h2>}>
+        <AuthenticatedLayout
+            header={
+                // BAR TIDAK DIUBAH, TETAP SEPERTI GAMBAR
+                <h2 className="font-bold text-2xl text-cyan-700 leading-tight bg-gradient-to-r from-slate-300 via-cyan-200 to-blue-300 px-6 py-3 rounded-lg shadow-lg">
+                    Movement History
+                </h2>
+            }
+        >
             <Head title="Movement History" />
-            <div className="mx-auto max-w-7xl px-4 py-6">
-                <div className="mb-4 flex items-center justify-between bg-white p-4 shadow sm:rounded-xl">
-                    <form onSubmit={handleFilter} className="flex space-x-2">
-                        <input
-                            type="text"
-                            placeholder="Search by product or user..."
-                            value={search}
-                            onChange={(e) => setSearch(e.target.value)}
-                            className="form-input rounded-md border px-4 py-2"
-                        />
-                        <button type="submit" className="btn btn-primary rounded-md bg-green-500 px-4 py-2 text-white">
-                            Search
-                        </button>
-                    </form>
-                </div>
 
-                <div className="overflow-scroll bg-white shadow sm:rounded-lg">
-                    <table className="min-w-full divide-y divide-gray-200">
-                        <thead className="bg-gray-50">
-                            <tr>
-                                {['Date', 'Product', 'Location', 'User', 'Type', 'Qty', 'Prev Qty', 'New Qty', 'Ref', 'Notes', 'Actions'].map(
-                                    (col) => (
-                                        <th key={col} className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
-                                            {col}
-                                        </th>
-                                    ),
-                                )}
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-200 bg-white">
-                            {movements.data.map((entry) => (
-                                <tr key={entry.id}>
-                                    <td className="px-4 py-2 text-sm whitespace-nowrap">{new Date(entry.created_at).toLocaleString()}</td>
-                                    <td className="px-4 py-2 text-sm whitespace-nowrap">
-                                        {entry.product?.sku} - {entry.product?.name}
-                                    </td>
-                                    <td className="px-4 py-2 text-sm whitespace-nowrap">
-                                        {entry.location?.warehouse.name} / {entry.location?.name}
-                                    </td>
-                                    <td className="px-4 py-2 text-sm whitespace-nowrap">{entry.user?.name}</td>
-                                    <td className="px-4 py-2 text-sm whitespace-nowrap capitalize">{entry.type}</td>
-                                    <td className="px-4 py-2 text-sm whitespace-nowrap">{entry.quantity}</td>
-                                    <td className="px-4 py-2 text-sm whitespace-nowrap">{entry.previous_quantity}</td>
-                                    <td className="px-4 py-2 text-sm whitespace-nowrap">{entry.new_quantity}</td>
-                                    <td className="px-4 py-2 text-sm whitespace-nowrap">{entry.reference_number || '-'}</td>
-                                    <td className="px-4 py-2 text-sm whitespace-nowrap">{entry.notes || '-'}</td>
-                                    <td className="space-x-2 px-4 py-2 text-sm whitespace-nowrap">
-                                        <button onClick={() => handleDelete(entry.id)} className="text-red-600 hover:text-red-800">
-                                            Delete
-                                        </button>
-                                    </td>
+            {/* SOFT PASTEL GRADIENT BACKGROUND */}
+            <div
+                className="min-h-screen w-full py-8 px-2"
+                style={{
+                    background: 'linear-gradient(135deg, #f3f8fe 0%, #e0f7fa 60%, #f8f8fc 100%)'
+                }}
+            >
+                <div className="mx-auto max-w-7xl px-4 py-6">
+
+                    {/* SEARCH BAR */}
+                    <div className="mb-4 flex items-center justify-between bg-white/90 p-4 shadow-lg sm:rounded-xl border border-blue-100">
+                        <form onSubmit={handleFilter} className="flex w-full max-w-xl space-x-2">
+                            <input
+                                type="text"
+                                placeholder="Search by product or user..."
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                                className="flex-1 rounded-l-xl border border-gray-200 px-4 py-2 bg-blue-50 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100 transition"
+                            />
+                            <button
+                                type="submit"
+                                className="rounded-r-xl bg-gradient-to-r from-green-400 via-emerald-400 to-green-500 px-6 py-2 text-white font-bold shadow hover:brightness-110 transition"
+                            >
+                                Search
+                            </button>
+                        </form>
+                    </div>
+
+                    {/* TABLE */}
+                    <div className="overflow-x-auto bg-white/95 shadow-xl sm:rounded-lg border border-blue-50">
+                        <table className="min-w-full divide-y divide-blue-100">
+                            <thead className="bg-gradient-to-r from-blue-50 via-cyan-50 to-blue-100">
+                                <tr>
+                                    {['Date', 'Product', 'Location', 'User', 'Type', 'Qty', 'Prev Qty', 'New Qty', 'Ref', 'Notes', 'Actions'].map(
+                                        (col) => (
+                                            <th
+                                                key={col}
+                                                className="px-4 py-2 text-left text-xs font-bold text-blue-700 uppercase tracking-wider"
+                                            >
+                                                {col}
+                                            </th>
+                                        ),
+                                    )}
                                 </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
+                            </thead>
+                            <tbody className="divide-y divide-blue-50 bg-white/80">
+                                {movements.data.map((entry, idx) => (
+                                    <tr
+                                        key={entry.id}
+                                        className={idx % 2 === 0 ? 'bg-blue-50/40 hover:bg-cyan-50/80 transition' : 'hover:bg-cyan-50/80 transition'}
+                                    >
+                                        <td className="px-4 py-2 text-sm whitespace-nowrap">{new Date(entry.created_at).toLocaleString()}</td>
+                                        <td className="px-4 py-2 text-sm whitespace-nowrap">
+                                            {entry.product?.sku} - {entry.product?.name}
+                                        </td>
+                                        <td className="px-4 py-2 text-sm whitespace-nowrap">
+                                            {entry.location?.warehouse.name} / {entry.location?.name}
+                                        </td>
+                                        <td className="px-4 py-2 text-sm whitespace-nowrap">{entry.user?.name}</td>
+                                        <td className="px-4 py-2 text-sm whitespace-nowrap capitalize">
+                                            <span className={
+                                                entry.type === 'in'
+                                                    ? 'bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-semibold border border-green-200'
+                                                    : entry.type === 'out'
+                                                    ? 'bg-red-100 text-red-700 px-3 py-1 rounded-full text-xs font-semibold border border-red-200'
+                                                    : 'bg-cyan-100 text-cyan-700 px-3 py-1 rounded-full text-xs font-semibold border border-cyan-200'
+                                            }>
+                                                {entry.type}
+                                            </span>
+                                        </td>
+                                        <td className="px-4 py-2 text-sm whitespace-nowrap font-semibold text-blue-700">{entry.quantity}</td>
+                                        <td className="px-4 py-2 text-sm whitespace-nowrap">{entry.previous_quantity}</td>
+                                        <td className="px-4 py-2 text-sm whitespace-nowrap">{entry.new_quantity}</td>
+                                        <td className="px-4 py-2 text-sm whitespace-nowrap">{entry.reference_number || '-'}</td>
+                                        <td className="px-4 py-2 text-sm whitespace-nowrap">{entry.notes || '-'}</td>
+                                        <td className="space-x-2 px-4 py-2 text-sm whitespace-nowrap">
+                                            <button
+                                                onClick={() => handleDelete(entry.id)}
+                                                className="text-white bg-gradient-to-r from-red-400 via-red-500 to-red-600 hover:bg-gradient-to-br rounded-lg px-3 py-1 font-semibold shadow transition"
+                                            >
+                                                Delete
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
 
-                <div className="mt-4 flex justify-center space-x-1">
-                    {movements.links.map((link, i) => (
-                        <Link
-                            key={i}
-                            href={link.url || '#'}
-                            className={`rounded border px-3 py-1 ${link.active ? 'bg-gray-300' : ''}`}
-                            dangerouslySetInnerHTML={{ __html: link.label }}
-                        />
-                    ))}
+                    {/* PAGINATION */}
+                    <div className="mt-4 flex justify-center space-x-1">
+                        {movements.links.map((link, i) => (
+                            <Link
+                                key={i}
+                                href={link.url || '#'}
+                                className={`rounded border px-3 py-1 ${link.active ? 'bg-blue-100 text-blue-700 font-bold' : 'bg-white text-gray-700'} hover:bg-blue-50 transition`}
+                                dangerouslySetInnerHTML={{ __html: link.label }}
+                            />
+                        ))}
+                    </div>
                 </div>
             </div>
         </AuthenticatedLayout>

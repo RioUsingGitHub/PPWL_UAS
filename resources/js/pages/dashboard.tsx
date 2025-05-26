@@ -1,6 +1,5 @@
 import { Head } from '@inertiajs/react';
 import AuthenticatedLayout from '@/layouts/AuthenticatedLayout';
-import { PageProps, DashboardStats, MovementHistory, StockByWarehouse } from '@/types';
 import { 
     CubeIcon, 
     UserGroupIcon, 
@@ -8,92 +7,86 @@ import {
     ExclamationTriangleIcon 
 } from '@heroicons/react/24/outline';
 
-interface DashboardPageProps extends PageProps {
-    stats: DashboardStats;
-    recent_movements: MovementHistory[];
-    stock_by_warehouse: StockByWarehouse[];
-}
-
 export default function Dashboard({ 
     stats, 
     recent_movements, 
     stock_by_warehouse 
-}: DashboardPageProps) {
+}) {
     const statCards = [
         {
             name: 'Total Products',
             value: stats.total_products,
             icon: CubeIcon,
-            color: 'bg-blue-500',
+            color: 'bg-gradient-to-br from-blue-500 via-blue-400 to-cyan-400 shadow-blue-200',
+            iconBg: 'bg-white/80',
         },
         {
             name: 'Total Users',
             value: stats.total_users,
             icon: UserGroupIcon,
-            color: 'bg-green-500',
+            color: 'bg-gradient-to-br from-green-500 via-emerald-400 to-lime-300 shadow-green-200',
+            iconBg: 'bg-white/80',
         },
         {
             name: 'Total Warehouses',
             value: stats.total_warehouses,
             icon: BuildingStorefrontIcon,
-            color: 'bg-purple-500',
+            color: 'bg-gradient-to-br from-purple-500 via-fuchsia-400 to-pink-300 shadow-purple-200',
+            iconBg: 'bg-white/80',
         },
         {
             name: 'Low Stock Products',
             value: stats.low_stock_products,
             icon: ExclamationTriangleIcon,
-            color: 'bg-red-500',
+            color: 'bg-gradient-to-br from-red-500 via-orange-400 to-yellow-300 shadow-orange-200',
+            iconBg: 'bg-white/80',
         },
     ];
 
-    const getMovementTypeColor = (type: string) => {
+    const getMovementTypeColor = (type) => {
         switch (type) {
             case 'in':
-                return 'bg-green-100 text-green-800';
+                return 'bg-green-100 text-green-700 border border-green-300 shadow-sm';
             case 'out':
-                return 'bg-red-100 text-red-800';
+                return 'bg-red-100 text-red-600 border border-red-300 shadow-sm';
             case 'adjustment':
-                return 'bg-blue-100 text-blue-800';
+                return 'bg-blue-100 text-blue-600 border border-blue-300 shadow-sm';
             case 'transfer':
-                return 'bg-purple-100 text-purple-800';
+                return 'bg-purple-100 text-purple-600 border border-purple-300 shadow-sm';
             default:
-                return 'bg-gray-100 text-gray-800';
+                return 'bg-gray-100 text-gray-700 border border-gray-300 shadow-sm';
         }
     };
 
     return (
         <AuthenticatedLayout
             header={
-                <h2 className="font-semibold text-xl text-gray-800 leading-tight">
+                <h2 className="font-bold text-2xl text-cyan-700 leading-tight bg-gradient-to-r from-slate-300 via-cyan-200 to-blue-300 px-6 py-3 rounded-lg shadow-lg">
                     Dashboard
                 </h2>
             }
         >
             <Head title="Dashboard" />
 
-            <div className="py-12">
+            {/* Soft gradient background */}
+            <div className="py-12 min-h-screen"
+                 style={{
+                    background: 'linear-gradient(135deg, #f0f4ff 0%, #f8fafc 50%, #e0f7fa 100%)'
+                 }}>
                 <div className="max-w-7xl mx-auto sm:px-6 lg:px-8">
                     {/* Stats Cards */}
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                         {statCards.map((stat) => (
-                            <div key={stat.name} className="bg-white overflow-hidden shadow rounded-lg">
-                                <div className="p-5">
-                                    <div className="flex items-center">
-                                        <div className="flex-shrink-0">
-                                            <div className={`${stat.color} p-3 rounded-md`}>
-                                                <stat.icon className="w-6 h-6 text-white" />
-                                            </div>
-                                        </div>
-                                        <div className="ml-5 w-0 flex-1">
-                                            <dl>
-                                                <dt className="text-sm font-medium text-gray-500 truncate">
-                                                    {stat.name}
-                                                </dt>
-                                                <dd className="text-lg font-medium text-gray-900">
-                                                    {stat.value.toLocaleString()}
-                                                </dd>
-                                            </dl>
-                                        </div>
+                            <div key={stat.name} className={`overflow-hidden rounded-xl shadow-md hover:scale-105 transition-transform duration-200 ${stat.color}`}>
+                                <div className="p-5 flex items-center">
+                                    <div className={`flex-shrink-0 rounded-lg p-2 ${stat.iconBg} shadow`}>
+                                        <stat.icon className="w-7 h-7 text-blue-700" />
+                                    </div>
+                                    <div className="ml-5 w-0 flex-1">
+                                        <dl>
+                                            <dt className="text-sm font-semibold text-white/80 truncate drop-shadow">{stat.name}</dt>
+                                            <dd className="text-2xl font-bold text-white drop-shadow">{stat.value.toLocaleString()}</dd>
+                                        </dl>
                                     </div>
                                 </div>
                             </div>
@@ -102,9 +95,9 @@ export default function Dashboard({
 
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                         {/* Recent Movements */}
-                        <div className="bg-white shadow rounded-lg">
+                        <div className="bg-white/90 shadow-lg rounded-xl border border-blue-100">
                             <div className="px-4 py-5 sm:p-6">
-                                <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">
+                                <h3 className="text-lg leading-6 font-bold text-blue-700 mb-4">
                                     Recent Stock Movements
                                 </h3>
                                 <div className="space-y-4">
@@ -113,40 +106,39 @@ export default function Dashboard({
                                             <div key={movement.id} className="flex items-center justify-between">
                                                 <div className="flex items-center space-x-3">
                                                     <span
-                                                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getMovementTypeColor(movement.type)}`}
+                                                        className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${getMovementTypeColor(movement.type)}`}
                                                     >
                                                         {movement.type.toUpperCase()}
                                                     </span>
                                                     <div>
-                                                        <p className="text-sm font-medium text-gray-900">
+                                                        <p className="text-sm font-bold text-gray-900">
                                                             {movement.product?.name}
                                                         </p>
-                                                        <p className="text-sm text-gray-500">
+                                                        <p className="text-xs text-gray-500">
                                                             {movement.location?.warehouse?.name} - {movement.location?.name}
                                                         </p>
                                                     </div>
                                                 </div>
                                                 <div className="text-right">
-                                                    <p className="text-sm font-medium text-gray-900">
+                                                    <p className="text-sm font-semibold text-gray-900">
                                                         {movement.type === 'out' ? '-' : '+'}{movement.quantity}
                                                     </p>
-                                                    <p className="text-xs text-gray-500">
+                                                    <p className="text-xs text-gray-400">
                                                         {new Date(movement.created_at).toLocaleDateString()}
                                                     </p>
                                                 </div>
                                             </div>
                                         ))
                                     ) : (
-                                        <p className="text-sm text-gray-500">No recent movements</p>
+                                        <p className="text-sm text-gray-400">No recent movements</p>
                                     )}
                                 </div>
                             </div>
                         </div>
-
                         {/* Stock by Warehouse */}
-                        <div className="bg-white shadow rounded-lg">
+                        <div className="bg-white/90 shadow-lg rounded-xl border border-purple-100">
                             <div className="px-4 py-5 sm:p-6">
-                                <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">
+                                <h3 className="text-lg leading-6 font-bold text-purple-700 mb-4">
                                     Stock by Warehouse
                                 </h3>
                                 <div className="space-y-4">
@@ -154,22 +146,22 @@ export default function Dashboard({
                                         stock_by_warehouse.map((warehouse) => (
                                             <div key={warehouse.name} className="flex items-center justify-between">
                                                 <div>
-                                                    <p className="text-sm font-medium text-gray-900">
+                                                    <p className="text-sm font-bold text-gray-900">
                                                         {warehouse.name}
                                                     </p>
-                                                    <p className="text-sm text-gray-500">
+                                                    <p className="text-xs text-gray-500">
                                                         {warehouse.total_items.toLocaleString()} items
                                                     </p>
                                                 </div>
                                                 <div className="text-right">
-                                                    <p className="text-sm font-medium text-gray-900">
+                                                    <p className="text-sm font-semibold text-purple-700">
                                                         Rp {warehouse.total_value.toLocaleString()}
                                                     </p>
                                                 </div>
                                             </div>
                                         ))
                                     ) : (
-                                        <p className="text-sm text-gray-500">No warehouse data</p>
+                                        <p className="text-sm text-gray-400">No warehouse data</p>
                                     )}
                                 </div>
                             </div>

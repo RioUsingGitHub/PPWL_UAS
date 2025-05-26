@@ -209,8 +209,15 @@ export default function StockIndex({
     };
 
     return (
-        <AuthenticatedLayout header={<h2 className="text-xl font-semibold text-gray-800">Stock Management</h2>}>
-            <Head title="Stock" />
+        <AuthenticatedLayout
+            header={
+                <h2 className="font-bold text-2xl text-cyan-700 leading-tight bg-gradient-to-r from-slate-300 via-cyan-200 to-blue-300 px-6 py-3 rounded-lg shadow-lg">
+                    Stocks
+                </h2>
+            }
+        >
+            <Head title="Stocks" />
+            
             <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
                 {/* Filter Bar */}
                 <div className="mb-4 flex items-center justify-between px-4 py-4 bg-white shadow sm:rounded-xl">

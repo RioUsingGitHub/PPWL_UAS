@@ -104,7 +104,13 @@ export default function WarehouseIndex({ warehouses, filters }: WarehouseIndexPr
     };
 
     return (
-        <AuthenticatedLayout header={<h2 className="text-xl font-semibold text-gray-800">Warehouse Management</h2>}>
+        <AuthenticatedLayout
+            header={
+                <h2 className="font-bold text-2xl text-cyan-700 leading-tight bg-gradient-to-r from-slate-300 via-cyan-200 to-blue-300 px-6 py-3 rounded-lg shadow-lg"> 
+                Warehouses
+                </h2>
+            }
+        >
             <Head title="Warehouses" />
 
             <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
