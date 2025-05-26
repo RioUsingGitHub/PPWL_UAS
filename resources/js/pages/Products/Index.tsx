@@ -70,226 +70,257 @@ export default function ProductsIndex({ products, categories, filters }: Product
     const totalStock = (product: Product) => product.stock_items?.reduce((sum, item) => sum + item.quantity, 0) ?? 0;
 
     return (
-        <AuthenticatedLayout header={<h2 className="text-xl font-semibold text-gray-800">Product Management</h2>}>
+        <AuthenticatedLayout
+            header={
+                <h2 className="font-bold text-2xl text-cyan-700 leading-tight bg-gradient-to-r from-slate-300 via-cyan-200 to-blue-300 px-6 py-3 rounded-lg shadow-lg">
+                    Product Management
+                </h2>
+            }
+        >
             <Head title="Products" />
 
-            <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-                <div className="mb-4 flex items-center justify-between bg-white px-4 py-4 shadow sm:rounded-xl">
-                    <form onSubmit={handleFilter} className="flex space-x-2">
-                        <input
-                            type="text"
-                            placeholder="Search..."
-                            value={search}
-                            onChange={(e) => setSearch(e.target.value)}
-                            className="form-input rounded-md border border-gray-300 px-4 py-2 shadow-sm focus:border-blue-500"
-                        />
+            {/* Soft pastel gradient background */}
+            <div
+                className="min-h-screen w-full py-8 px-2"
+                style={{
+                    background: 'linear-gradient(135deg, #f3f8fe 0%, #e6f6fb 60%, #f8f8fc 100%)'
+                }}
+            >
+                <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+                    {/* Filter Bar */}
+                    <div className="mb-4 flex flex-col md:flex-row items-center justify-between bg-white/90 px-4 py-4 shadow-lg sm:rounded-xl border border-blue-100">
+                        <form onSubmit={handleFilter} className="flex flex-wrap gap-2 items-center">
+                            <input
+                                type="text"
+                                placeholder="Search..."
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                                className="rounded-md border border-gray-300 px-4 py-2 shadow-sm focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition"
+                            />
 
-                        <select
-                            value={category}
-                            onChange={(e) => setCategory(e.target.value)}
-                            className="form-select rounded-md border border-gray-300 px-4 py-2 shadow-sm focus:border-blue-500"
-                        >
-                            <option value="">All Categories</option>
-                            {categories.map((cat) => (
-                                <option key={cat} value={cat}>
-                                    {cat}
-                                </option>
-                            ))}
-                        </select>
+                            <select
+                                value={category}
+                                onChange={(e) => setCategory(e.target.value)}
+                                className="rounded-md border border-gray-300 px-4 py-2 shadow-sm focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition"
+                            >
+                                <option value="">All Categories</option>
+                                {categories.map((cat) => (
+                                    <option key={cat} value={cat}>
+                                        {cat}
+                                    </option>
+                                ))}
+                            </select>
 
-                        <label className="flex items-center space-x-1">
-                            <input type="checkbox" checked={lowStock} onChange={(e) => setLowStock(e.target.checked)} className="form-checkbox" />
-                            <span className="text-sm">Low Stock</span>
-                        </label>
+                            <label className="flex items-center space-x-1 bg-blue-50 px-3 py-2 rounded-md">
+                                <input type="checkbox" checked={lowStock} onChange={(e) => setLowStock(e.target.checked)} className="form-checkbox accent-blue-500" />
+                                <span className="text-sm text-blue-700">Low Stock</span>
+                            </label>
+
+                            <button
+                                type="submit"
+                                className="rounded-md bg-gradient-to-r from-green-400 via-emerald-400 to-green-500 px-4 py-2 text-white font-semibold shadow-md hover:brightness-110 transition"
+                            >
+                                Filter
+                            </button>
+                        </form>
 
                         <button
-                            type="submit"
-                            className="btn btn-primary rounded-md bg-green-500 px-4 py-2 text-white shadow-sm transition-transform duration-200 hover:scale-105"
+                            onClick={openCreate}
+                            className="mt-2 md:mt-0 rounded-md bg-gradient-to-r from-blue-400 via-cyan-400 to-blue-500 px-4 py-2 text-white font-semibold shadow-md hover:brightness-110 transition"
                         >
-                            Filter
+                            Create Product
                         </button>
-                    </form>
+                    </div>
 
-                    <button
-                        onClick={openCreate}
-                        className="btn btn-secondary rounded-md bg-blue-500 px-4 py-2 text-white shadow-sm transition-transform duration-200 hover:scale-105"
-                    >
-                        Create Product
-                    </button>
-                </div>
-
-                <div className="overflow-scroll bg-white shadow sm:rounded-lg">
-                    <table className="min-w-full divide-y divide-gray-200">
-                        <thead className="bg-gray-50">
-                            <tr>
-                                {['Name', 'SKU', 'Barcode', 'Category', 'Price', 'Stock', 'Min Stock', 'Status', 'Actions'].map((label) => (
-                                    <th key={label} className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                                        {label}
-                                    </th>
-                                ))}
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-200 bg-white">
-                            {products.data.map((product) => (
-                                <tr key={product.id} className={totalStock(product) <= product.min_stock ? 'bg-red-50' : ''}>
-                                    <td className="px-6 py-4 whitespace-nowrap">{product.name}</td>
-                                    <td className="px-6 py-4 whitespace-nowrap">{product.sku}</td>
-                                    <td className="px-6 py-4 whitespace-nowrap">{product.barcode}</td>
-                                    <td className="px-6 py-4 whitespace-nowrap">{product.category}</td>
-                                    <td className="px-6 py-4 whitespace-nowrap">{product.price.toLocaleString()}</td>
-                                    <td className="px-6 py-4 whitespace-nowrap">{totalStock(product)}</td>
-                                    <td className="px-6 py-4 whitespace-nowrap">{product.min_stock}</td>
-                                    <td className="px-6 py-4 whitespace-nowrap">{totalStock(product) <= product.min_stock ? 'Low' : 'OK'}</td>
-                                    <td className="space-x-2 px-6 py-4 whitespace-nowrap">
-                                        <Link href={`/products/${product.id}`} className="btn btn-sm rounded-md bg-indigo-200 px-2 py-1">
-                                            View
-                                        </Link>
-                                        <Link href={`/products/${product.id}/edit`} className="btn btn-sm rounded-md bg-amber-200 px-2 py-1">
-                                            Edit
-                                        </Link>
-                                        <button
-                                            onClick={() => handleDelete(product)}
-                                            className="btn btn-sm rounded-md bg-red-500 px-2 py-1 text-white"
+                    {/* Table */}
+                    <div className="overflow-x-auto bg-white/95 shadow-xl sm:rounded-lg border border-blue-50">
+                        <table className="min-w-full divide-y divide-blue-100">
+                            <thead className="bg-gradient-to-r from-blue-50 via-cyan-50 to-blue-100">
+                                <tr>
+                                    {['Name', 'SKU', 'Barcode', 'Category', 'Price', 'Stock', 'Min Stock', 'Status', 'Actions'].map((label) => (
+                                        <th
+                                            key={label}
+                                            className="px-6 py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider"
                                         >
-                                            Delete
-                                        </button>
-                                    </td>
+                                            {label}
+                                        </th>
+                                    ))}
                                 </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
-
-                <div className="mt-4 flex justify-center space-x-1">
-                    {products.links.map((link, i) => (
-                        <Link
-                            key={i}
-                            href={link.url || '#'}
-                            className={`rounded border px-3 py-1 ${link.active ? 'bg-gray-300' : ''}`}
-                            dangerouslySetInnerHTML={{ __html: link.label }}
-                        />
-                    ))}
-                </div>
-
-                {/* Create Modal */}
-                <Transition appear show={isCreateOpen} as={Fragment}>
-                    <Dialog as="div" className="relative z-10" onClose={closeCreate}>
-                        <Transition.Child
-                            as={Fragment}
-                            enter="ease-out duration-300"
-                            enterFrom="opacity-0"
-                            enterTo="opacity-100"
-                            leave="ease-in duration-200"
-                            leaveFrom="opacity-100"
-                            leaveTo="opacity-0"
-                        >
-                            <div className="bg-opacity-25 fixed inset-0 bg-black/60" />
-                        </Transition.Child>
-                        <div className="fixed inset-0 overflow-y-auto">
-                            <div className="flex min-h-full items-center justify-center p-4 text-center">
-                                <Transition.Child
-                                    as={Fragment}
-                                    enter="ease-out duration-300"
-                                    enterFrom="opacity-0 scale-95"
-                                    enterTo="opacity-100 scale-100"
-                                    leave="ease-in duration-200"
-                                    leaveFrom="opacity-100 scale-100"
-                                    leaveTo="opacity-0 scale-95"
-                                >
-                                    <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-2xl bg-white p-6 text-left align-middle shadow-xl transition-all">
-                                        <Dialog.Title className="text-lg leading-6 font-medium text-gray-900">Create Product</Dialog.Title>
-                                        <form onSubmit={handleCreate} className="mt-4 space-y-4">
-                                            <input
-                                                placeholder="Name"
-                                                value={createForm.data.name}
-                                                onChange={(e) => createForm.setData('name', e.target.value)}
-                                                className="form-input w-full"
-                                                required
-                                            />
-                                            {createForm.errors.name && <div className="text-sm text-red-600">{createForm.errors.name}</div>}
-
-                                            <textarea
-                                                placeholder="Description"
-                                                value={createForm.data.description}
-                                                onChange={(e) => createForm.setData('description', e.target.value)}
-                                                className="form-textarea w-full"
-                                            />
-
-                                            <input
-                                                placeholder="SKU"
-                                                value={createForm.data.sku}
-                                                onChange={(e) => createForm.setData('sku', e.target.value)}
-                                                className="form-input w-full"
-                                                required
-                                            />
-                                            {createForm.errors.sku && <div className="text-sm text-red-600">{createForm.errors.sku}</div>}
-
-                                            <input
-                                                type="number"
-                                                placeholder="Price"
-                                                value={createForm.data.price}
-                                                onChange={(e) => createForm.setData('price', parseFloat(e.target.value))}
-                                                className="form-input w-full"
-                                                required
-                                            />
-                                            {createForm.errors.price && <div className="text-sm text-red-600">{createForm.errors.price}</div>}
-
-                                            <input
-                                                placeholder="Unit"
-                                                value={createForm.data.unit}
-                                                onChange={(e) => createForm.setData('unit', e.target.value)}
-                                                className="form-input w-full"
-                                                required
-                                            />
-
-                                            <select
-                                                value={createForm.data.category}
-                                                onChange={(e) => createForm.setData('category', e.target.value)}
-                                                className="form-select w-full"
+                            </thead>
+                            <tbody className="divide-y divide-blue-50 bg-white/80">
+                                {products.data.map((product) => (
+                                    <tr
+                                        key={product.id}
+                                        className={totalStock(product) <= product.min_stock ? 'bg-red-50/80' : 'hover:bg-blue-50/60 transition'}
+                                    >
+                                        <td className="px-6 py-4 whitespace-nowrap font-medium text-gray-900">{product.name}</td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-gray-700">{product.sku}</td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-gray-700">{product.barcode}</td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-gray-700">{product.category}</td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-green-700 font-semibold">{product.price.toLocaleString()}</td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-blue-700 font-semibold">{totalStock(product)}</td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-blue-500">{product.min_stock}</td>
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                                            <span className={`px-3 py-1 rounded-full text-xs font-semibold shadow ${totalStock(product) <= product.min_stock ? 'bg-red-100 text-red-700 border border-red-200' : 'bg-green-100 text-green-700 border border-green-200'}`}>
+                                                {totalStock(product) <= product.min_stock ? 'Low' : 'OK'}
+                                            </span>
+                                        </td>
+                                        <td className="space-x-2 px-6 py-4 whitespace-nowrap">
+                                            <Link href={`/products/${product.id}`} className="btn btn-sm rounded-md bg-indigo-100 text-indigo-700 px-2 py-1 hover:bg-indigo-200 transition">
+                                                View
+                                            </Link>
+                                            <Link href={`/products/${product.id}/edit`} className="btn btn-sm rounded-md bg-amber-100 text-amber-700 px-2 py-1 hover:bg-amber-200 transition">
+                                                Edit
+                                            </Link>
+                                            <button
+                                                onClick={() => handleDelete(product)}
+                                                className="btn btn-sm rounded-md bg-red-500 text-white px-2 py-1 hover:bg-red-600 transition"
                                             >
-                                                <option value="">Select Category</option>
-                                                {categories.map((cat) => (
-                                                    <option key={cat} value={cat}>
-                                                        {cat}
-                                                    </option>
-                                                ))}
-                                            </select>
+                                                Delete
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
 
-                                            <input
-                                                type="number"
-                                                placeholder="Min Stock"
-                                                value={createForm.data.min_stock}
-                                                onChange={(e) => createForm.setData('min_stock', parseInt(e.target.value))}
-                                                className="form-input w-full"
-                                                required
-                                            />
+                    {/* Pagination */}
+                    <div className="mt-4 flex justify-center space-x-1">
+                        {products.links.map((link, i) => (
+                            <Link
+                                key={i}
+                                href={link.url || '#'}
+                                className={`rounded border px-3 py-1 ${link.active ? 'bg-blue-100 text-blue-700 font-bold' : 'bg-white text-gray-700'} hover:bg-blue-50 transition`}
+                                dangerouslySetInnerHTML={{ __html: link.label }}
+                            />
+                        ))}
+                    </div>
 
-                                            <input
-                                                type="file"
-                                                onChange={(e) => createForm.setData('image', e.target.files?.[0] || null)}
-                                                className="form-input w-full"
-                                            />
+                    {/* Create Modal */}
+                    <Transition appear show={isCreateOpen} as={Fragment}>
+                        <Dialog as="div" className="relative z-10" onClose={closeCreate}>
+                            <Transition.Child
+                                as={Fragment}
+                                enter="ease-out duration-300"
+                                enterFrom="opacity-0"
+                                enterTo="opacity-100"
+                                leave="ease-in duration-200"
+                                leaveFrom="opacity-100"
+                                leaveTo="opacity-0"
+                            >
+                                <div className="bg-opacity-25 fixed inset-0 bg-black/60" />
+                            </Transition.Child>
+                            <div className="fixed inset-0 overflow-y-auto">
+                                <div className="flex min-h-full items-center justify-center p-4 text-center">
+                                    <Transition.Child
+                                        as={Fragment}
+                                        enter="ease-out duration-300"
+                                        enterFrom="opacity-0 scale-95"
+                                        enterTo="opacity-100 scale-100"
+                                        leave="ease-in duration-200"
+                                        leaveFrom="opacity-100 scale-100"
+                                        leaveTo="opacity-0 scale-95"
+                                    >
+                                        <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-2xl bg-white/95 p-6 text-left align-middle shadow-xl transition-all border border-blue-100">
+                                            <Dialog.Title className="text-lg leading-6 font-bold text-blue-700">Create Product</Dialog.Title>
+                                            <form onSubmit={handleCreate} className="mt-4 space-y-4">
+                                                <input
+                                                    placeholder="Name"
+                                                    value={createForm.data.name}
+                                                    onChange={(e) => createForm.setData('name', e.target.value)}
+                                                    className="form-input w-full rounded-md border border-blue-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                                                    required
+                                                />
+                                                {createForm.errors.name && <div className="text-sm text-red-600">{createForm.errors.name}</div>}
 
-                                            <div className="mt-4 flex justify-end space-x-2">
-                                                <button
-                                                    type="button"
-                                                    onClick={closeCreate}
-                                                    className="btn btn-secondary"
-                                                    disabled={createForm.processing}
+                                                <textarea
+                                                    placeholder="Description"
+                                                    value={createForm.data.description}
+                                                    onChange={(e) => createForm.setData('description', e.target.value)}
+                                                    className="form-textarea w-full rounded-md border border-blue-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                                                />
+
+                                                <input
+                                                    placeholder="SKU"
+                                                    value={createForm.data.sku}
+                                                    onChange={(e) => createForm.setData('sku', e.target.value)}
+                                                    className="form-input w-full rounded-md border border-blue-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                                                    required
+                                                />
+                                                {createForm.errors.sku && <div className="text-sm text-red-600">{createForm.errors.sku}</div>}
+
+                                                <input
+                                                    type="number"
+                                                    placeholder="Price"
+                                                    value={createForm.data.price}
+                                                    onChange={(e) => createForm.setData('price', parseFloat(e.target.value))}
+                                                    className="form-input w-full rounded-md border border-blue-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                                                    required
+                                                />
+                                                {createForm.errors.price && <div className="text-sm text-red-600">{createForm.errors.price}</div>}
+
+                                                <input
+                                                    placeholder="Unit"
+                                                    value={createForm.data.unit}
+                                                    onChange={(e) => createForm.setData('unit', e.target.value)}
+                                                    className="form-input w-full rounded-md border border-blue-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                                                    required
+                                                />
+
+                                                <select
+                                                    value={createForm.data.category}
+                                                    onChange={(e) => createForm.setData('category', e.target.value)}
+                                                    className="form-select w-full rounded-md border border-blue-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
                                                 >
-                                                    Cancel
-                                                </button>
-                                                <button type="submit" className="btn btn-primary" disabled={createForm.processing}>
-                                                    Create
-                                                </button>
-                                            </div>
-                                        </form>
-                                    </Dialog.Panel>
-                                </Transition.Child>
+                                                    <option value="">Select Category</option>
+                                                    {categories.map((cat) => (
+                                                        <option key={cat} value={cat}>
+                                                            {cat}
+                                                        </option>
+                                                    ))}
+                                                </select>
+
+                                                <input
+                                                    type="number"
+                                                    placeholder="Min Stock"
+                                                    value={createForm.data.min_stock}
+                                                    onChange={(e) => createForm.setData('min_stock', parseInt(e.target.value))}
+                                                    className="form-input w-full rounded-md border border-blue-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                                                    required
+                                                />
+
+                                                <input
+                                                    type="file"
+                                                    onChange={(e) => createForm.setData('image', e.target.files?.[0] || null)}
+                                                    className="form-input w-full"
+                                                />
+
+                                                <div className="mt-4 flex justify-end space-x-2">
+                                                    <button
+                                                        type="button"
+                                                        onClick={closeCreate}
+                                                        className="rounded-md bg-gray-200 px-4 py-2 text-gray-700 font-semibold hover:bg-gray-300 transition"
+                                                        disabled={createForm.processing}
+                                                    >
+                                                        Cancel
+                                                    </button>
+                                                    <button
+                                                        type="submit"
+                                                        className="rounded-md bg-blue-500 px-4 py-2 text-white font-semibold hover:bg-blue-600 transition"
+                                                        disabled={createForm.processing}
+                                                    >
+                                                        Create
+                                                    </button>
+                                                </div>
+                                            </form>
+                                        </Dialog.Panel>
+                                    </Transition.Child>
+                                </div>
                             </div>
-                        </div>
-                    </Dialog>
-                </Transition>
+                        </Dialog>
+                    </Transition>
+                </div>
             </div>
         </AuthenticatedLayout>
     );
