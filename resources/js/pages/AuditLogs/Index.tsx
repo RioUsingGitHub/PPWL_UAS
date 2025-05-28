@@ -88,7 +88,12 @@ export default function MovementHistoryIndex({ movements, filters }: MovementHis
                                             {entry.product?.sku} - {entry.product?.name}
                                         </td>
                                         <td className="px-4 py-2 text-sm whitespace-nowrap">
-                                            {entry.location?.warehouse.name} / {entry.location?.name}
+                                            {entry.location
+                                                ? entry.location.warehouse
+                                                    ? entry.location.warehouse.name
+                                                    : 'No warehouse'
+                                                : 'No location'}
+                                                / {entry.location?.name}
                                         </td>
                                         <td className="px-4 py-2 text-sm whitespace-nowrap">{entry.user?.name}</td>
                                         <td className="px-4 py-2 text-sm whitespace-nowrap capitalize">
