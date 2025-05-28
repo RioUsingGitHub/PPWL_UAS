@@ -12,6 +12,7 @@ import {
     XMarkIcon,
     ChevronDownIcon
 } from '@heroicons/react/24/outline';
+import { Toaster } from "@/components/ui/sonner"
 
 interface Props extends PropsWithChildren {
     header?: ReactNode;
@@ -210,6 +211,7 @@ export default function AuthenticatedLayout({ header, children }: Props) {
                         </div>
                     </div>
                 </main>
+                <Toaster />
             </div>
         </div>
     );

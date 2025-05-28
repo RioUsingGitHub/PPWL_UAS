@@ -569,12 +569,12 @@ export default function StockIndex({
                                                 <button
                                                     type="button"
                                                     onClick={closeAdjust}
-                                                    className="btn btn-secondary"
+                                                    className="btn bg-gray-200 px-4 py-2 rounded"
                                                     disabled={adjustForm.processing}
                                                 >
                                                     Cancel
                                                 </button>
-                                                <button type="submit" className="btn btn-primary" disabled={adjustForm.processing}>
+                                                <button type="submit" className="btn bg-blue-600 text-white px-4 py-2 rounded" disabled={adjustForm.processing}>
                                                     Submit
                                                 </button>
                                             </div>
