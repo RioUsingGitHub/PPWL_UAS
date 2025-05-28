@@ -22,7 +22,7 @@ export default function MovementHistoryIndex({ movements, filters }: MovementHis
     };
 
     const handleDelete = (id: number) => {
-        if (!confirm('Are you sure you want to delete this entry?')) return;
+        if (!confirm('Apakah Anda yakin ingin menghapus Riwayat Pergerakan Produk?')) return;
         router.delete(`/audit-logs/${id}`, { preserveScroll: true });
     };
 
@@ -31,11 +31,11 @@ export default function MovementHistoryIndex({ movements, filters }: MovementHis
             header={
                 // BAR TIDAK DIUBAH, TETAP SEPERTI GAMBAR
                 <h2 className="font-bold text-2xl text-cyan-700 leading-tight bg-gradient-to-r from-slate-300 via-cyan-200 to-blue-300 px-6 py-3 rounded-lg shadow-lg">
-                    Movement History
+                    Riwayat Pergerakan Produk
                 </h2>
             }
         >
-            <Head title="Movement History" />
+            <Head title="Riwayat Pergerakan Produk" />
 
             {/* SOFT PASTEL GRADIENT BACKGROUND */}
             <div>
@@ -65,7 +65,7 @@ export default function MovementHistoryIndex({ movements, filters }: MovementHis
                         <table className="min-w-full divide-y divide-blue-100">
                             <thead className="bg-gradient-to-r from-blue-50 via-cyan-50 to-blue-100">
                                 <tr>
-                                    {['Date', 'Product', 'Location', 'User', 'Type', 'Qty', 'Prev Qty', 'New Qty', 'Ref', 'Notes', 'Actions'].map(
+                                    {['Tanggal', 'Produk', 'Lokasi', 'Pengguna', 'Tipe', 'Jumlah', 'Jumlah Sebelumnya', 'Jumlah Baru', 'Referensi', 'Catatan', 'Aksi'].map(
                                         (col) => (
                                             <th
                                                 key={col}
