@@ -83,6 +83,7 @@ export interface Warehouse {
     created_at: string;
     updated_at: string;
     locations?: Location[];
+    locations_count?: number;
 }
 
 export interface Location {
