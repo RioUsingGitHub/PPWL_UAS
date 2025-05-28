@@ -22,7 +22,7 @@ export default function MovementHistoryIndex({ movements, filters }: MovementHis
     };
 
     const handleDelete = (id: number) => {
-        if (!confirm('Apakah Anda yakin ingin menghapus Riwayat Pergerakan Produk?')) return;
+        if (!confirm('Apakah Anda yakin ingin menghapus Daftar Audit?')) return;
         router.delete(`/audit-logs/${id}`, { preserveScroll: true });
     };
 
@@ -31,11 +31,11 @@ export default function MovementHistoryIndex({ movements, filters }: MovementHis
             header={
                 // BAR TIDAK DIUBAH, TETAP SEPERTI GAMBAR
                 <h2 className="font-bold text-2xl text-cyan-700 leading-tight bg-gradient-to-r from-slate-300 via-cyan-200 to-blue-300 px-6 py-3 rounded-lg shadow-lg">
-                    Riwayat Pergerakan Produk
+                    Daftar Audit
                 </h2>
             }
         >
-            <Head title="Riwayat Pergerakan Produk" />
+            <Head title="Daftar Audit" />
 
             {/* SOFT PASTEL GRADIENT BACKGROUND */}
             <div>
@@ -46,7 +46,7 @@ export default function MovementHistoryIndex({ movements, filters }: MovementHis
                         <form onSubmit={handleFilter} className="flex w-full max-w-xl space-x-2">
                             <input
                                 type="text"
-                                placeholder="Search by product or user..."
+                                placeholder="Cara berdasarkan produk atau pengguna..."
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
                                 className="flex-1 rounded-l-xl border border-gray-200 px-4 py-2 bg-blue-50 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100 transition"
@@ -55,7 +55,7 @@ export default function MovementHistoryIndex({ movements, filters }: MovementHis
                                 type="submit"
                                 className="rounded-r-xl bg-gradient-to-r from-green-400 via-emerald-400 to-green-500 px-6 py-2 text-white font-bold shadow hover:brightness-110 transition"
                             >
-                                Search
+                                Cari
                             </button>
                         </form>
                     </div>
@@ -69,7 +69,7 @@ export default function MovementHistoryIndex({ movements, filters }: MovementHis
                                         (col) => (
                                             <th
                                                 key={col}
-                                                className="px-4 py-2 text-left text-xs font-bold text-blue-700 uppercase tracking-wider"
+                                                className="px-4 py-2 text-left text-xs font-bold text-blue-700 tracking-wider"
                                             >
                                                 {col}
                                             </th>
@@ -117,7 +117,7 @@ export default function MovementHistoryIndex({ movements, filters }: MovementHis
                                                 onClick={() => handleDelete(entry.id)}
                                                 className="text-white bg-gradient-to-r from-red-400 via-red-500 to-red-600 hover:bg-gradient-to-br rounded-lg px-3 py-1 font-semibold shadow transition"
                                             >
-                                                Delete
+                                                Hapus
                                             </button>
                                         </td>
                                     </tr>
