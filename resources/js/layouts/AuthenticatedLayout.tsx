@@ -36,43 +36,43 @@ export default function AuthenticatedLayout({ header, children }: Props) {
 
     const navigation = [
         {
-            name: 'Dashboard',
+            name: 'Beranda',
             href: '/dashboard',
             icon: HomeIcon,
             show: true,
         },
         {
-            name: 'Products',
+            name: 'Produk',
             href: '/products',
             icon: CubeIcon,
             show: hasPermission('manage-products'),
         },
         {
-            name: 'Stock',
+            name: 'Stok',
             href: '/stock',
             icon: ClipboardDocumentListIcon,
             show: hasPermission('manage-stock'),
         },
         {
-            name: 'Warehouses',
+            name: 'Gudang',
             href: '/warehouses',
             icon: BuildingStorefrontIcon,
             show: hasPermission('manage-warehouses'),
         },
         {
-            name: 'Scan',
+            name: 'Pindai',
             href: '/scan',
             icon: QrCodeIcon,
             show: hasPermission('scan-barcode'),
         },
         {
-            name: 'Users',
+            name: 'Pengguna',
             href: '/users',
             icon: UserGroupIcon,
             show: hasPermission('manage-users'),
         },
         {
-            name: 'Audit Logs',
+            name: 'Daftar Audit',
             href: '/audit-logs',
             icon: ClipboardDocumentListIcon,
             show: hasPermission('view-audit-logs'),

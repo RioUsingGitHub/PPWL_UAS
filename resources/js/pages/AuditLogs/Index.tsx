@@ -69,7 +69,7 @@ export default function MovementHistoryIndex({ movements, filters }: MovementHis
                                         (col) => (
                                             <th
                                                 key={col}
-                                                className="px-4 py-2 text-left text-xs font-bold text-blue-700 uppercase tracking-wider"
+                                                className="px-4 py-2 text-left text-xs font-bold text-blue-700 tracking-wider"
                                             >
                                                 {col}
                                             </th>
