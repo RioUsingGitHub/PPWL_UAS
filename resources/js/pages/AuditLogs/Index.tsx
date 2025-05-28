@@ -46,7 +46,7 @@ export default function MovementHistoryIndex({ movements, filters }: MovementHis
                         <form onSubmit={handleFilter} className="flex w-full max-w-xl space-x-2">
                             <input
                                 type="text"
-                                placeholder="Search by product or user..."
+                                placeholder="Cara berdasarkan produk atau pengguna..."
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
                                 className="flex-1 rounded-l-xl border border-gray-200 px-4 py-2 bg-blue-50 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100 transition"
