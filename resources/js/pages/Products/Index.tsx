@@ -152,7 +152,7 @@ export default function ProductsIndex({ products, categories, filters }: Product
                                         <td className="px-6 py-4 whitespace-nowrap text-gray-700">{product.sku}</td>
                                         <td className="px-6 py-4 whitespace-nowrap text-gray-700">{product.barcode}</td>
                                         <td className="px-6 py-4 whitespace-nowrap text-gray-700">{product.category}</td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-green-700 font-semibold">{product.price.toLocaleString()}</td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-green-700 font-semibold"> Rp {product.price.toLocaleString('id-ID')}</td>
                                         <td className="px-6 py-4 whitespace-nowrap text-blue-700 font-semibold">{totalStock(product)}</td>
                                         <td className="px-6 py-4 whitespace-nowrap text-blue-500">{product.min_stock}</td>
                                         <td className="px-6 py-4 whitespace-nowrap">
