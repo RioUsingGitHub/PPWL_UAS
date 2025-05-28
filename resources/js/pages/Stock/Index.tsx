@@ -209,7 +209,7 @@ export default function StockIndex({
     };
 
     return (
-        <AuthenticatedLayout header={<h2 className="text-xl font-semibold text-gray-800">Stock Management</h2>}>
+        <AuthenticatedLayout header={<h2 className="text-xl font-semibold text-gray-800">Manajemen Stok</h2>}>
             <Head title="Stock" />
             <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
                 {/* Filter Bar */}
@@ -217,7 +217,7 @@ export default function StockIndex({
                     <form onSubmit={handleFilter} className="flex flex-wrap gap-2 items-center">
                         <input
                             type="text"
-                            placeholder="Search product name or SKU..."
+                            placeholder="Cari Produk/SKU..."
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
                             className="form-input px-4 py-2 border border-gray-300 rounded-md shadow-sm"
@@ -227,7 +227,7 @@ export default function StockIndex({
                             onChange={(e) => setWarehouseId(e.target.value)}
                             className="form-select bg-white border border-gray-300 px-4 py-2 rounded-md shadow-sm"
                         >
-                            <option value="">All Warehouses</option>
+                            <option value="">Semua Gudang</option>
                             {warehouses.map((w: Warehouse) => (
                                 <option key={w.id} value={w.id}>{w.name}</option>
                             ))}
@@ -238,7 +238,7 @@ export default function StockIndex({
                                 checked={lowStock}
                                 onChange={(e) => setLowStock(e.target.checked)}
                             />
-                            <span>Low Stock</span>
+                            <span>Stok Rendah</span>
                         </label>
                         <label className="flex items-center space-x-1">
                             <input
@@ -246,7 +246,7 @@ export default function StockIndex({
                                 checked={expired}
                                 onChange={(e) => setExpired(e.target.checked)}
                             />
-                            <span>Expired</span>
+                            <span>Kadaluarsa</span>
                         </label>
                         <button type="submit" className="btn btn-primary bg-green-500 text-white px-4 py-2 rounded-md shadow-sm hover:scale-105 transition-transform duration-200">
                             Filter
@@ -257,7 +257,7 @@ export default function StockIndex({
                         onClick={() => setShowBulk(true)}
                         className="btn btn-secondary bg-blue-500 text-white px-4 py-2 rounded-md shadow-sm hover:scale-105 transition-transform duration-200"
                     >
-                        Bulk Adjust
+                        Penyesuaian Massal
                     </button>
                 </div>
                 {/* TABEL STOCK */}
@@ -265,23 +265,23 @@ export default function StockIndex({
                     <table className="min-w-full divide-y divide-gray-200">
                         <thead className="bg-gray-50">
                             <tr>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Product</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Produk</th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">SKU</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Warehouse</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Location</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Batch</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Quantity</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Gudang</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Lokasi</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Kelompok</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Jumlah</th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Unit</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Unit Cost</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Expiry Date</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Harga Unit</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tanggal Kadaluarsa</th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Actions</th>
+                                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Aksi</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-200 bg-white">
                             {stock_items.data.length === 0 && (
                                 <tr>
-                                    <td colSpan={11} className="px-6 py-4 text-center text-gray-500">No stock items found.</td>
+                                    <td colSpan={11} className="px-6 py-4 text-center text-gray-500">Tidak ada stok barang yang ditemukan.</td>
                                 </tr>
                             )}
                             {stock_items.data.map((item: StockItem) => (
@@ -301,25 +301,25 @@ export default function StockIndex({
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         {item.is_expired ? (
-                                            <span className="px-2 py-1 rounded bg-red-500 text-white text-xs">Expired</span>
+                                            <span className="px-2 py-1 rounded bg-red-500 text-white text-xs">Kadaluarsa</span>
                                         ) : item.is_near_expiry ? (
-                                            <span className="px-2 py-1 rounded bg-yellow-500 text-white text-xs">Near Expiry</span>
+                                            <span className="px-2 py-1 rounded bg-yellow-500 text-white text-xs">Hampir Kadaluwarsa</span>
                                         ) : (
                                             <span className="px-2 py-1 rounded bg-green-100 text-green-800 text-xs">OK</span>
                                         )}
                                     </td>
                                     <td className="space-x-2 px-6 py-4 whitespace-nowrap text-center">
                                         <button onClick={() => openAdjust(item)} className="btn btn-sm rounded-md bg-indigo-200 px-2 py-1">
-                                            Adjust
+                                            Sesuaikan
                                         </button>
                                         <button
                                             onClick={() => openView(item)}
                                             className="btn btn-sm rounded-md bg-amber-200 px-2 py-1"
                                         >
-                                            View
+                                            Lihat
                                         </button>
                                         <button onClick={() => handleDelete(item)} className="btn btn-sm rounded-md bg-red-500 px-2 py-1 text-white">
-                                            Delete
+                                            Hapus
                                         </button>
                                     </td>
                                 </tr>
@@ -405,7 +405,7 @@ export default function StockIndex({
                                     </div>
                                     {/* RIGHT: Bulk Adjust Form */}
                                     <div className="w-1/2 p-6 flex flex-col">
-                                        <h3 className="text-lg font-semibold mb-4">Bulk Stock Adjustment</h3>
+                                        <h3 className="text-lg font-semibold mb-4">Penyesuaian stok masal</h3>
                                         <form onSubmit={handleBulkAdjust} className="flex flex-col flex-1 gap-3">
                                             <div>
                                                 <label className="block text-sm font-medium mb-1">Jenis Penyesuaian</label>
@@ -414,9 +414,9 @@ export default function StockIndex({
                                                     onChange={e => setBulkType(e.target.value as any)}
                                                     className="border border-gray-300 p-2 rounded w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
                                                 >
-                                                    <option value="in">In (+)</option>
-                                                    <option value="out">Out (-)</option>
-                                                    <option value="adjustment">Adjustment</option>
+                                                    <option value="in">masuk (+)</option>
+                                                    <option value="out">keluar (-)</option>
+                                                    <option value="adjustment">Penyesuaian</option>
                                                 </select>
                                             </div>
                                             <div>
@@ -431,7 +431,7 @@ export default function StockIndex({
                                                 />
                                             </div>
                                             <div>
-                                                <label className="block text-sm font-medium mb-1">No Referensi (opsional)</label>
+                                                <label className="block text-sm font-medium mb-1">Nomer Referensi (opsional)</label>
                                                 <input
                                                     type="text"
                                                     value={bulkReference}
@@ -460,7 +460,7 @@ export default function StockIndex({
                                                     disabled={bulkProcessing || selectedIds.length === 0}
                                                     className="btn bg-blue-600 text-white px-4 py-2 rounded"
                                                 >
-                                                    {bulkProcessing ? 'Memproses...' : `Adjust ${selectedIds.length} Data`}
+                                                    {bulkProcessing ? 'Memproses...' : `Sesuaikan ${selectedIds.length} Data`}
                                                 </button>
                                             </div>
                                         </form>
@@ -497,7 +497,7 @@ export default function StockIndex({
                                     leaveTo="opacity-0 scale-95"
                                 >
                                     <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-2xl bg-white p-6 text-left align-middle shadow-xl transition-all">
-                                        <Dialog.Title className="text-lg font-medium text-gray-900 mb-4">Adjust Stock</Dialog.Title>
+                                        <Dialog.Title className="text-lg font-medium text-gray-900 mb-4">Sesuiakan Stok</Dialog.Title>
                                         <form onSubmit={handleAdjust} className="space-y-3">
                                             <div>
                                                 <label className="block text-sm font-medium mb-1">Produk</label>
@@ -524,9 +524,9 @@ export default function StockIndex({
                                                     onChange={(e) => adjustForm.setData('type', e.target.value as any)}
                                                     className="border border-gray-300 p-2 rounded w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
                                                 >
-                                                    <option value="in">In</option>
-                                                    <option value="out">Out</option>
-                                                    <option value="adjustment">Adjustment</option>
+                                                    <option value="in">masuk</option>
+                                                    <option value="out">keluar</option>
+                                                    <option value="adjustment">Sesuaikan</option>
                                                 </select>
                                             </div>
                                             <div>
@@ -565,10 +565,10 @@ export default function StockIndex({
                                                     className="btn btn-secondary"
                                                     disabled={adjustForm.processing}
                                                 >
-                                                    Cancel
+                                                    Batal
                                                 </button>
                                                 <button type="submit" className="btn btn-primary" disabled={adjustForm.processing}>
-                                                    Submit
+                                                    Kirim
                                                 </button>
                                             </div>
                                         </form>
@@ -626,11 +626,11 @@ export default function StockIndex({
                                                 <div className="font-medium">{viewItem.location.name}</div>
                                             </div>
                                             <div>
-                                                <div className="text-xs text-gray-500">Batch</div>
+                                                <div className="text-xs text-gray-500">Kelompok</div>
                                                 <div className="font-medium">{viewItem.batch_number ?? '-'}</div>
                                             </div>
                                             <div>
-                                                <div className="text-xs text-gray-500">Quantity</div>
+                                                <div className="text-xs text-gray-500">Jumlah</div>
                                                 <div className="font-medium">{viewItem.quantity}</div>
                                             </div>
                                             <div>
@@ -638,7 +638,7 @@ export default function StockIndex({
                                                 <div className="font-medium">{viewItem.product.unit}</div>
                                             </div>
                                             <div>
-                                                <div className="text-xs text-gray-500">Unit Cost</div>
+                                                <div className="text-xs text-gray-500">Harga Unit</div>
                                                 <div className="font-medium">
                                                     {viewItem.unit_cost !== null
                                                         ? Number(viewItem.unit_cost).toLocaleString('id-ID', { style: 'currency', currency: 'IDR' })
@@ -646,16 +646,16 @@ export default function StockIndex({
                                                 </div>
                                             </div>
                                             <div>
-                                                <div className="text-xs text-gray-500">Expiry Date</div>
+                                                <div className="text-xs text-gray-500">Tanggal Kadaluarsa</div>
                                                 <div className="font-medium">{formatDate(viewItem.expiry_date)}</div>
                                             </div>
                                             <div>
                                                 <div className="text-xs text-gray-500">Status</div>
                                                 <div>
                                                     {viewItem.is_expired ? (
-                                                        <span className="px-2 py-1 rounded bg-red-500 text-white text-xs">Expired</span>
+                                                        <span className="px-2 py-1 rounded bg-red-500 text-white text-xs">Kadaluarsa</span>
                                                     ) : viewItem.is_near_expiry ? (
-                                                        <span className="px-2 py-1 rounded bg-yellow-500 text-white text-xs">Near Expiry</span>
+                                                        <span className="px-2 py-1 rounded bg-yellow-500 text-white text-xs">Hampir Kadaluarsa</span>
                                                     ) : (
                                                         <span className="px-2 py-1 rounded bg-green-100 text-green-800 text-xs">OK</span>
                                                     )}
