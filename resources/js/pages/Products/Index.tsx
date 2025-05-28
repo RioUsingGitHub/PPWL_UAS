@@ -35,6 +35,8 @@ export default function ProductsIndex({ products, categories, filters }: Product
 
     // Create Modal state and form
     const [isCreateOpen, setIsCreateOpen] = useState(false);
+    const [isNew, setIsNew] = useState(false);
+    const [typed, setTyped] = useState('');
     const createForm = useForm<{
         name: string;
         description: string;
@@ -86,14 +88,23 @@ export default function ProductsIndex({ products, categories, filters }: Product
 
     const handleCreate = (e: React.FormEvent) => {
         e.preventDefault();
+
         createForm.post('/products', {
-            onSuccess: closeCreate,
+            onSuccess: () => {
+                setIsNew(false);
+                setTyped('');
+                createForm.reset();
+                closeCreate();
+            },
             onError: (errors) => {
                 if (errors.image) {
                     toast.error('Image upload failed: ' + errors.image);
                 }
                 if (errors.sku) {
                     toast.error('SKU already exists');
+                }
+                if (errors.category) {
+                    toast.error('Category already exists');
                 }
             }
         });
@@ -350,18 +361,49 @@ export default function ProductsIndex({ products, categories, filters }: Product
                                                     required
                                                 />
 
+                                                <div>
+                                                <label className="block mb-1 font-medium">Category</label>
                                                 <select
-                                                    value={createForm.data.category}
-                                                    onChange={(e) => createForm.setData('category', e.target.value)}
-                                                    className="form-select w-full rounded-md border border-blue-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                                                value={isNew ? '__new__' : createForm.data.category}
+                                                onChange={(e) => {
+                                                    if (e.target.value === '__new__') {
+                                                    setIsNew(true);
+                                                    // clear both local and form state
+                                                    setTyped('');
+                                                    createForm.setData('category', '');
+                                                    } else {
+                                                    setIsNew(false);
+                                                    createForm.setData('category', e.target.value);
+                                                    }
+                                                }}
+                                                className="form-select w-full rounded-md border border-blue-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
                                                 >
-                                                    <option value="">Select Category</option>
-                                                    {categories.map((cat) => (
-                                                        <option key={cat} value={cat}>
-                                                            {cat}
-                                                        </option>
-                                                    ))}
+                                                <option value="">— Select Category —</option>
+                                                {categories.map((cat) => (
+                                                    <option key={cat} value={cat}>
+                                                    {cat}
+                                                    </option>
+                                                ))}
+                                                <option value="__new__">— Create New Category —</option>
                                                 </select>
+                                            </div>
+
+                                            {/* 2) The “new” text input */}
+                                            {isNew && (
+                                                <div>
+                                                <label className="block mb-1 font-medium">New Category</label>
+                                                <input
+                                                    type="text"
+                                                    value={typed}
+                                                    onChange={(e) => {
+                                                    setTyped(e.target.value);
+                                                    createForm.setData('category', e.target.value);
+                                                    }}
+                                                    placeholder="Enter new category name"
+                                                    className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                                                />
+                                                </div>
+                                            )}
 
                                                 <input
                                                     type="number"
