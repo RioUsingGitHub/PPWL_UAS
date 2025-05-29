@@ -48,8 +48,6 @@ interface StockIndexProps {
         low_stock?: string;
         expired?: string;
     };
-    products?: Product[];
-    locations?: Location[];
 }
 
 function formatDate(dateStr: string | null) {
@@ -62,15 +60,36 @@ export default function StockIndex({
     stock_items,
     warehouses,
     filters,
-    products = [],
-    locations = [],
 }: StockIndexProps) {
     const [search, setSearch] = useState(filters.search || '');
     const [warehouseId, setWarehouseId] = useState(filters.warehouse_id || '');
     const [lowStock, setLowStock] = useState(!!filters.low_stock);
     const [expired, setExpired] = useState(!!filters.expired);
 
+    // Ambil semua lokasi unik dari stock_items
+    const allLocations = useMemo(() => {
+        const locMap: { [id: number]: Location } = {};
+        stock_items.data.forEach(item => {
+            if (item.location && !locMap[item.location.id]) {
+                locMap[item.location.id] = item.location;
+            }
+        });
+        return Object.values(locMap);
+    }, [stock_items.data]);
+
+    // Ambil semua warehouse unik dari lokasi
+    const allWarehouses = useMemo(() => {
+        const whMap: { [id: number]: Warehouse } = {};
+        allLocations.forEach(loc => {
+            if (loc.warehouse && !whMap[loc.warehouse.id]) {
+                whMap[loc.warehouse.id] = loc.warehouse;
+            }
+        });
+        return Object.values(whMap);
+    }, [allLocations]);
+
     // Per-row adjustment modal
+    const [adjustWarehouseId, setAdjustWarehouseId] = useState<number>(0);
     const [isAdjustOpen, setIsAdjustOpen] = useState(false);
     const [currentItem, setCurrentItem] = useState<StockItem | null>(null);
     const adjustForm = useForm<{
@@ -91,9 +110,10 @@ export default function StockIndex({
 
     const openAdjust = (item: StockItem) => {
         setCurrentItem(item);
+        setAdjustWarehouseId(item.location.warehouse.id);
         adjustForm.setData({
             product_id: item.product_id,
-            location_id: item.location_id,
+            location_id: item.location.id,
             type: 'adjustment',
             quantity: 1,
             notes: '',
@@ -101,6 +121,7 @@ export default function StockIndex({
         });
         setIsAdjustOpen(true);
     };
+
     const closeAdjust = () => {
         adjustForm.reset();
         setCurrentItem(null);
@@ -120,8 +141,6 @@ export default function StockIndex({
     const [showBulk, setShowBulk] = useState(false);
     const [bulkSearch, setBulkSearch] = useState('');
     const [selectedIds, setSelectedIds] = useState<number[]>([]);
-
-    // Bulk Adjustment Form (tanpa stock_item_ids)
     const [bulkType, setBulkType] = useState<'in' | 'out' | 'adjustment'>('adjustment');
     const [bulkQuantity, setBulkQuantity] = useState('');
     const [bulkNotes, setBulkNotes] = useState('');
@@ -129,7 +148,6 @@ export default function StockIndex({
     const [bulkProcessing, setBulkProcessing] = useState(false);
     const [bulkError, setBulkError] = useState<string | null>(null);
 
-    // Filtered stock for left panel in bulk adjust
     const filteredBulkStock = useMemo((): StockItem[] => {
         if (!bulkSearch) return stock_items.data;
         return stock_items.data.filter(
@@ -139,19 +157,16 @@ export default function StockIndex({
         );
     }, [bulkSearch, stock_items.data]);
 
-    // Checkbox handler
     const handleCheck = (id: number, checked: boolean) => {
         setSelectedIds((prev) =>
             checked ? [...prev, id] : prev.filter((sid) => sid !== id)
         );
     };
 
-    // Select all handler
     const handleCheckAll = (checked: boolean) => {
         setSelectedIds(checked ? filteredBulkStock.map((item: StockItem) => item.id) : []);
     };
 
-    // Bulk adjustment submit (loop per item, tanpa stock_item_ids)
     const handleBulkAdjust = async (e: React.FormEvent) => {
         e.preventDefault();
         setBulkError(null);
@@ -338,138 +353,138 @@ export default function StockIndex({
                         />
                     ))}
                 </div>
-
-                {/* BULK ADJUSTMENT MODAL */}
+                {/* BULK ADJUSTMENT MODAL*/}
                 <Transition appear show={showBulk} as={Fragment}>
-                    <Dialog as="div" className="relative z-50" onClose={() => setShowBulk(false)}>
-                        <Transition.Child
-                            as={Fragment}
-                            enter="ease-out duration-300"
-                            enterFrom="opacity-0"
-                            enterTo="opacity-100"
-                            leave="ease-in duration-200"
-                            leaveFrom="opacity-100"
-                            leaveTo="opacity-0"
-                        >
-                            <div className="fixed inset-0 bg-black/60 bg-opacity-40" />
-                        </Transition.Child>
-                        <div className="fixed inset-0 flex items-center justify-center p-4">
-                            <Transition.Child
-                                as={Fragment}
-                                enter="ease-out duration-300"
-                                enterFrom="opacity-0 scale-95"
-                                enterTo="opacity-100 scale-100"
-                                leave="ease-in duration-200"
-                                leaveFrom="opacity-100 scale-100"
-                                leaveTo="opacity-0 scale-95"
-                            >
-                                <Dialog.Panel className="w-full max-w-4xl bg-white rounded-lg shadow-xl flex overflow-hidden">
-                                    {/* LEFT: Data Picker */}
-                                    <div className="w-1/2 border-r p-6 bg-gray-50 flex flex-col">
-                                        <h3 className="text-lg font-semibold mb-2">Pilih Data Stock</h3>
-                                        <input
-                                            type="text"
-                                            className="form-input w-full mb-2 border border-gray-300 p-2 rounded"
-                                            placeholder="Cari nama/SKU..."
-                                            value={bulkSearch}
-                                            onChange={e => setBulkSearch(e.target.value)}
-                                        />
-                                        <div className="flex items-center mb-2">
-                                            <input
-                                                type="checkbox"
-                                                checked={selectedIds.length === filteredBulkStock.length && filteredBulkStock.length > 0}
-                                                onChange={e => handleCheckAll(e.target.checked)}
-                                                className="mr-2"
-                                            />
-                                            <span className="text-sm">Pilih Semua</span>
-                                        </div>
-                                        <div className="flex-1 overflow-y-auto border rounded bg-white">
-                                            {filteredBulkStock.length === 0 && (
-                                                <div className="text-gray-400 text-center py-8">Tidak ada data</div>
-                                            )}
-                                            {filteredBulkStock.map((item: StockItem) => (
-                                                <label key={item.id} className="flex items-center px-2 py-1 border-b cursor-pointer hover:bg-gray-100">
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={selectedIds.includes(item.id)}
-                                                        onChange={e => handleCheck(item.id, e.target.checked)}
-                                                        className="mr-2"
-                                                    />
-                                                    <span className="flex-1 text-sm">
-                                                        <b>{item.product.name}</b> ({item.product.sku}) | {item.location.warehouse?.name} / {item.location.name}
-                                                    </span>
-                                                    <span className="text-xs text-gray-500 ml-2">Qty: {item.quantity}</span>
-                                                </label>
-                                            ))}
-                                        </div>
-                                    </div>
-                                    {/* RIGHT: Bulk Adjust Form */}
-                                    <div className="w-1/2 p-6 flex flex-col">
-                                        <h3 className="text-lg font-semibold mb-4">Penyesuaian stok masal</h3>
-                                        <form onSubmit={handleBulkAdjust} className="flex flex-col flex-1 gap-3">
-                                            <div>
-                                                <label className="block text-sm font-medium mb-1">Jenis Penyesuaian</label>
-                                                <select
-                                                    value={bulkType}
-                                                    onChange={e => setBulkType(e.target.value as any)}
-                                                    className="border border-gray-300 p-2 rounded w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                                >
-                                                    <option value="in">masuk (+)</option>
-                                                    <option value="out">keluar (-)</option>
-                                                    <option value="adjustment">Penyesuaian</option>
-                                                </select>
-                                            </div>
-                                            <div>
-                                                <label className="block text-sm font-medium mb-1">Jumlah Penyesuaian</label>
-                                                <input
-                                                    type="number"
-                                                    value={bulkQuantity}
-                                                    min={1}
-                                                    onChange={e => setBulkQuantity(e.target.value)}
-                                                    className="border border-gray-300 p-2 rounded w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                                    required
-                                                />
-                                            </div>
-                                            <div>
-                                                <label className="block text-sm font-medium mb-1">Nomer Referensi (opsional)</label>
-                                                <input
-                                                    type="text"
-                                                    value={bulkReference}
-                                                    onChange={e => setBulkReference(e.target.value)}
-                                                    className="border border-gray-300 p-2 rounded w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                                />
-                                            </div>
-                                            <div>
-                                                <label className="block text-sm font-medium mb-1">Catatan (opsional)</label>
-                                                <textarea
-                                                    value={bulkNotes}
-                                                    onChange={e => setBulkNotes(e.target.value)}
-                                                    className="border border-gray-300 p-2 rounded w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                                />
-                                            </div>
-                                            {bulkError && (
-                                                <div className="mt-2 text-red-500 text-sm">{bulkError}</div>
-                                            )}
-                                            <div className="flex-1" />
-                                            <div className="flex justify-end gap-2 mt-4">
-                                                <button type="button" onClick={() => setShowBulk(false)} className="btn bg-gray-200 px-4 py-2 rounded">
-                                                    Batal
-                                                </button>
-                                                <button
-                                                    type="submit"
-                                                    disabled={bulkProcessing || selectedIds.length === 0}
-                                                    className="btn bg-blue-600 text-white px-4 py-2 rounded"
-                                                >
-                                                    {bulkProcessing ? 'Memproses...' : `Sesuaikan ${selectedIds.length} Data`}
-                                                </button>
-                                            </div>
-                                        </form>
-                                    </div>
-                                </Dialog.Panel>
-                            </Transition.Child>
+    <Dialog as="div" className="relative z-50" onClose={() => setShowBulk(false)}>
+        <Transition.Child
+            as={Fragment}
+            enter="ease-out duration-300"
+            enterFrom="opacity-0"
+            enterTo="opacity-100"
+            leave="ease-in duration-200"
+            leaveFrom="opacity-100"
+            leaveTo="opacity-0"
+        >
+            <div className="fixed inset-0 bg-black/60 bg-opacity-40" />
+        </Transition.Child>
+        <div className="fixed inset-0 flex items-center justify-center p-4">
+            <Transition.Child
+                as={Fragment}
+                enter="ease-out duration-300"
+                enterFrom="opacity-0 scale-95"
+                enterTo="opacity-100 scale-100"
+                leave="ease-in duration-200"
+                leaveFrom="opacity-100 scale-100"
+                leaveTo="opacity-0 scale-95"
+            >
+                <Dialog.Panel className="w-full max-w-4xl bg-white rounded-lg shadow-xl flex overflow-hidden">
+                    {/* LEFT: Data Picker */}
+                    <div className="w-1/2 border-r p-6 bg-gray-50 flex flex-col">
+                        <h3 className="text-lg font-semibold mb-2">Pilih Data Stock</h3>
+                        <input
+                            type="text"
+                            className="form-input w-full mb-2 border border-gray-300 p-2 rounded"
+                            placeholder="Cari nama/SKU..."
+                            value={bulkSearch}
+                            onChange={e => setBulkSearch(e.target.value)}
+                        />
+                        <div className="flex items-center mb-2">
+                            <input
+                                type="checkbox"
+                                checked={selectedIds.length === filteredBulkStock.length && filteredBulkStock.length > 0}
+                                onChange={e => handleCheckAll(e.target.checked)}
+                                className="mr-2"
+                            />
+                            <span className="text-sm">Pilih Semua</span>
                         </div>
-                    </Dialog>
-                </Transition>
+                        <div className="flex-1 overflow-y-auto border rounded bg-white">
+                            {filteredBulkStock.length === 0 && (
+                                <div className="text-gray-400 text-center py-8">Tidak ada data</div>
+                            )}
+                            {filteredBulkStock.map((item: StockItem) => (
+                                <label key={item.id} className="flex items-center px-2 py-1 border-b cursor-pointer hover:bg-gray-100">
+                                    <input
+                                        type="checkbox"
+                                        checked={selectedIds.includes(item.id)}
+                                        onChange={e => handleCheck(item.id, e.target.checked)}
+                                        className="mr-2"
+                                    />
+                                    <span className="flex-1 text-sm">
+                                        <b>{item.product.name}</b> ({item.product.sku}) | {item.location.warehouse?.name} / {item.location.name}
+                                    </span>
+                                    <span className="text-xs text-gray-500 ml-2">Qty: {item.quantity}</span>
+                                </label>
+                            ))}
+                        </div>
+                    </div>
+                    {/* RIGHT: Bulk Adjust Form */}
+                    <div className="w-1/2 p-6 flex flex-col">
+                        <h3 className="text-lg font-semibold mb-4">Bulk Stock Adjustment</h3>
+                        <form onSubmit={handleBulkAdjust} className="flex flex-col flex-1 gap-3">
+                            <div>
+                                <label className="block text-sm font-medium mb-1">Jenis Penyesuaian</label>
+                                <select
+                                    value={bulkType}
+                                    onChange={e => setBulkType(e.target.value as any)}
+                                    className="border border-gray-300 p-2 rounded w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                >
+                                    <option value="in">In (+)</option>
+                                    <option value="out">Out (-)</option>
+                                    <option value="adjustment">Adjustment</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium mb-1">Jumlah Penyesuaian</label>
+                                <input
+                                    type="number"
+                                    value={bulkQuantity}
+                                    min={1}
+                                    onChange={e => setBulkQuantity(e.target.value)}
+                                    className="border border-gray-300 p-2 rounded w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    required
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium mb-1">No Referensi (opsional)</label>
+                                <input
+                                    type="text"
+                                    value={bulkReference}
+                                    onChange={e => setBulkReference(e.target.value)}
+                                    className="border border-gray-300 p-2 rounded w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium mb-1">Catatan (opsional)</label>
+                                <textarea
+                                    value={bulkNotes}
+                                    onChange={e => setBulkNotes(e.target.value)}
+                                    className="border border-gray-300 p-2 rounded w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                />
+                            </div>
+                            {bulkError && (
+                                <div className="mt-2 text-red-500 text-sm">{bulkError}</div>
+                            )}
+                            <div className="flex-1" />
+                            <div className="flex justify-end gap-2 mt-4">
+                                <button type="button" onClick={() => setShowBulk(false)} className="btn bg-gray-200 px-4 py-2 rounded">
+                                    Batal
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={bulkProcessing || selectedIds.length === 0}
+                                    className="btn bg-blue-600 text-white px-4 py-2 rounded"
+                                >
+                                    {bulkProcessing ? 'Memproses...' : `Adjust ${selectedIds.length} Data`}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </Dialog.Panel>
+            </Transition.Child>
+        </div>
+    </Dialog>
+</Transition>
+
 
                 {/* Per-row Adjustment Modal */}
                 <Transition appear show={isAdjustOpen} as={Fragment}>
@@ -497,81 +512,120 @@ export default function StockIndex({
                                     leaveTo="opacity-0 scale-95"
                                 >
                                     <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-2xl bg-white p-6 text-left align-middle shadow-xl transition-all">
-                                        <Dialog.Title className="text-lg font-medium text-gray-900 mb-4">Sesuiakan Stok</Dialog.Title>
-                                        <form onSubmit={handleAdjust} className="space-y-3">
-                                            <div>
-                                                <label className="block text-sm font-medium mb-1">Produk</label>
-                                                <input
-                                                    type="text"
-                                                    readOnly
-                                                    value={currentItem?.product?.name || ''}
-                                                    className="border border-gray-200 p-2 rounded w-full bg-gray-100"
-                                                />
-                                            </div>
-                                            <div>
-                                                <label className="block text-sm font-medium mb-1">Lokasi</label>
-                                                <input
-                                                    type="text"
-                                                    readOnly
-                                                    value={currentItem?.location?.name || ''}
-                                                    className="border border-gray-200 p-2 rounded w-full bg-gray-100"
-                                                />
-                                            </div>
-                                            <div>
-                                                <label className="block text-sm font-medium mb-1">Jenis Penyesuaian</label>
-                                                <select
-                                                    value={adjustForm.data.type}
-                                                    onChange={(e) => adjustForm.setData('type', e.target.value as any)}
-                                                    className="border border-gray-300 p-2 rounded w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                                >
-                                                    <option value="in">masuk</option>
-                                                    <option value="out">keluar</option>
-                                                    <option value="adjustment">Sesuaikan</option>
-                                                </select>
-                                            </div>
-                                            <div>
-                                                <label className="block text-sm font-medium mb-1">Jumlah</label>
-                                                <input
-                                                    type="number"
-                                                    placeholder="Quantity"
-                                                    value={adjustForm.data.quantity}
-                                                    onChange={(e) => adjustForm.setData('quantity', parseInt(e.target.value))}
-                                                    className="border border-gray-300 p-2 rounded w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                                    required
-                                                />
-                                            </div>
-                                            <div>
-                                                <label className="block text-sm font-medium mb-1">No Referensi (opsional)</label>
-                                                <input
-                                                    placeholder="No Referensi"
-                                                    value={adjustForm.data.reference_number}
-                                                    onChange={(e) => adjustForm.setData('reference_number', e.target.value)}
-                                                    className="border border-gray-300 p-2 rounded w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                                />
-                                            </div>
-                                            <div>
-                                                <label className="block text-sm font-medium mb-1">Catatan (opsional)</label>
-                                                <input
-                                                    placeholder="Catatan"
-                                                    value={adjustForm.data.notes}
-                                                    onChange={(e) => adjustForm.setData('notes', e.target.value)}
-                                                    className="border border-gray-300 p-2 rounded w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                                />
-                                            </div>
-                                            <div className="mt-4 flex justify-end space-x-2">
-                                                <button
-                                                    type="button"
-                                                    onClick={closeAdjust}
-                                                    className="btn btn-secondary"
-                                                    disabled={adjustForm.processing}
-                                                >
-                                                    Batal
-                                                </button>
-                                                <button type="submit" className="btn btn-primary" disabled={adjustForm.processing}>
-                                                    Kirim
-                                                </button>
-                                            </div>
-                                        </form>
+                                        <Dialog.Title className="text-lg font-medium text-gray-900 mb-4">Sesuaikan Stok</Dialog.Title>
+                                        <form onSubmit={handleAdjust} className="space-y-4">
+  {/* Produk */}
+  <div>
+    <label className="block text-sm font-semibold mb-1 text-gray-700">Produk</label>
+    <input
+      type="text"
+      readOnly
+      value={currentItem?.product?.name || ''}
+      className="border border-gray-200 p-2 rounded w-full bg-gray-100 text-gray-700"
+    />
+  </div>
+  {/* Gudang */}
+  <div>
+    <label className="block text-sm font-semibold mb-1 text-gray-700">Gudang</label>
+    <select
+      value={adjustWarehouseId}
+      onChange={e => {
+        setAdjustWarehouseId(Number(e.target.value));
+        adjustForm.setData('location_id', 0);
+      }}
+      className="border border-gray-300 p-2 rounded w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+      required
+    >
+      <option value="">Pilih Gudang</option>
+      {allWarehouses.map(w => (
+        <option key={w.id} value={w.id}>{w.name}</option>
+      ))}
+    </select>
+  </div>
+  {/* Lokasi */}
+  <div>
+    <label className="block text-sm font-semibold mb-1 text-gray-700">Lokasi</label>
+    <select
+      value={adjustForm.data.location_id}
+      onChange={e => adjustForm.setData('location_id', Number(e.target.value))}
+      className="border border-gray-300 p-2 rounded w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+      required
+    >
+      <option value="">Pilih Lokasi</option>
+      {allLocations
+        .filter(loc => loc.warehouse && loc.warehouse.id === adjustWarehouseId)
+        .map(loc => (
+          <option key={loc.id} value={loc.id}>{loc.name}</option>
+        ))}
+    </select>
+  </div>
+  {/* Jenis Penyesuaian */}
+  <div>
+    <label className="block text-sm font-semibold mb-1 text-gray-700">Jenis Penyesuaian</label>
+    <select
+      value={adjustForm.data.type}
+      onChange={e => adjustForm.setData('type', e.target.value as any)}
+      className="border border-gray-300 p-2 rounded w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+    >
+      <option value="in">Masuk</option>
+      <option value="out">Keluar</option>
+      <option value="adjustment">Sesuaikan</option>
+    </select>
+  </div>
+  {/* Jumlah */}
+  <div>
+    <label className="block text-sm font-semibold mb-1 text-gray-700">Jumlah</label>
+    <input
+      type="number"
+      placeholder="Quantity"
+      value={adjustForm.data.quantity}
+      onChange={e => adjustForm.setData('quantity', parseInt(e.target.value))}
+      className="border border-gray-300 p-2 rounded w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+      required
+    />
+    {adjustForm.errors.quantity && (
+      <div className="text-red-500 text-xs mt-1">{adjustForm.errors.quantity}</div>
+    )}
+  </div>
+  {/* No Referensi */}
+  <div>
+    <label className="block text-sm font-semibold mb-1 text-gray-700">No Referensi (opsional)</label>
+    <input
+      placeholder="No Referensi"
+      value={adjustForm.data.reference_number}
+      onChange={e => adjustForm.setData('reference_number', e.target.value)}
+      className="border border-gray-300 p-2 rounded w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+    />
+  </div>
+  {/* Catatan */}
+  <div>
+    <label className="block text-sm font-semibold mb-1 text-gray-700">Catatan (opsional)</label>
+    <input
+      placeholder="Catatan"
+      value={adjustForm.data.notes}
+      onChange={e => adjustForm.setData('notes', e.target.value)}
+      className="border border-gray-300 p-2 rounded w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+    />
+  </div>
+  {/* Tombol */}
+  <div className="mt-6 flex justify-end gap-2">
+    <button
+      type="button"
+      onClick={closeAdjust}
+      className="bg-gray-200 px-4 py-2 rounded hover:bg-gray-300"
+      disabled={adjustForm.processing}
+    >
+      Batal
+    </button>
+    <button
+      type="submit"
+      className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+      disabled={adjustForm.processing}
+    >
+      Simpan
+    </button>
+  </div>
+</form>
                                     </Dialog.Panel>
                                 </Transition.Child>
                             </div>
