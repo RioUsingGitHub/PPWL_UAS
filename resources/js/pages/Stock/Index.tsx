@@ -513,7 +513,18 @@ export default function StockIndex({
                                 >
                                     <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-2xl bg-white p-6 text-left align-middle shadow-xl transition-all">
                                         <Dialog.Title className="text-lg font-medium text-gray-900 mb-4">Sesuaikan Stok</Dialog.Title>
-                                        <form onSubmit={handleAdjust} className="space-y-4">
+                                        <form
+  onSubmit={e => {
+    e.preventDefault();
+    adjustForm.post('/stock/adjustment', {
+      onSuccess: () => {
+        closeAdjust();
+        window.location.reload(); // reload data agar tabel berubah
+      },
+    });
+  }}
+  className="space-y-4"
+>
   {/* Produk */}
   <div>
     <label className="block text-sm font-semibold mb-1 text-gray-700">Produk</label>
@@ -626,6 +637,7 @@ export default function StockIndex({
     </button>
   </div>
 </form>
+
                                     </Dialog.Panel>
                                 </Transition.Child>
                             </div>
