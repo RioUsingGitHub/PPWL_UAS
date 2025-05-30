@@ -24,6 +24,8 @@ export default function WarehouseIndex({ warehouses, locations, filters }: Wareh
     const [isCreateOpen, setIsCreateOpen] = useState(false);
     const [isEditOpen, setIsEditOpen] = useState(false);
     const [selectedWarehouse, setSelectedWarehouse] = useState<Warehouse | null>(null);
+    const [createLocationOpen, setCreateLocationOpen] = useState(false);
+
 
     const warehouseList = warehouses.data || []
     const allLocations = warehouseList.flatMap(w => w.locations || [])
@@ -436,7 +438,7 @@ export default function WarehouseIndex({ warehouses, locations, filters }: Wareh
                                                 placeholder="Warehouse Name"
                                                 value={createForm.data.name}
                                                 onChange={(e) => createForm.setData('name', e.target.value)}
-                                                className="w-full rounded border border-gray-300 p-1 placeholder:text-sm focus:ring-2 focus:ring-gray-300 focus:outline-none"
+                                                className="w-full rounded border border-gray-300 p-1 placeholder:text-sm focus:ring-2 focus:ring-gray-300 focus:outline-none text-gray-600"
                                                 required
                                             />
                                             {createForm.errors.name && <div className="text-sm text-red-600">{createForm.errors.name}</div>}
@@ -521,37 +523,41 @@ export default function WarehouseIndex({ warehouses, locations, filters }: Wareh
                                     <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-2xl bg-white p-6 text-left align-middle shadow-xl transition-all">
                                         <Dialog.Title className="text-lg leading-6 font-medium text-gray-900">Edit Warehouse</Dialog.Title>
                                         <form onSubmit={handleEdit} className="mt-4 space-y-4">
+                                            <label>Nama Gudang</label>
                                             <input
                                                 placeholder="Warehouse Name"
                                                 value={editForm.data.name}
                                                 onChange={(e) => editForm.setData('name', e.target.value)}
-                                                className="form-input w-full rounded-md border-gray-300"
+                                                className="w-full rounded border border-gray-300 p-1 placeholder:text-sm focus:ring-2 focus:ring-gray-300 focus:outline-none"
                                                 required
                                             />
                                             {editForm.errors.name && <div className="text-sm text-red-600">{editForm.errors.name}</div>}
 
+                                            <label>Kode Gudang</label>
                                             <input
                                                 placeholder="Warehouse Code"
                                                 value={editForm.data.code}
                                                 onChange={(e) => editForm.setData('code', e.target.value)}
-                                                className="form-input w-full rounded-md border-gray-300"
+                                                className="w-full rounded border border-gray-300 p-1 placeholder:text-sm focus:ring-2 focus:ring-gray-300 focus:outline-none"
                                                 required
                                             />
                                             {editForm.errors.code && <div className="text-sm text-red-600">{editForm.errors.code}</div>}
 
+                                            <label>Alamat</label>
                                             <textarea
                                                 placeholder="Address"
                                                 value={editForm.data.address}
                                                 onChange={(e) => editForm.setData('address', e.target.value)}
-                                                className="form-textarea w-full rounded-md border-gray-300"
+                                                className="form-textarea w-full rounded-md border border-gray-300 p-1 placeholder:text-sm"
                                                 rows={3}
                                             />
 
+                                            <label>No Hp</label>
                                             <input
                                                 placeholder="Phone Number"
                                                 value={editForm.data.phone}
                                                 onChange={(e) => editForm.setData('phone', e.target.value)}
-                                                className="form-input w-full rounded-md border-gray-300"
+                                                className="form-input w-full rounded-md border border-gray-300 p-1 placeholder:text-sm"
                                             />
 
                                             <label className="flex items-center space-x-2">
@@ -701,8 +707,8 @@ export default function WarehouseIndex({ warehouses, locations, filters }: Wareh
                                                     <button
                                                         onClick={() => openManage(w)}
                                                         className={`w-full text-left px-3 py-2 rounded ${selWh?.id === w.id
-                                                                ? 'bg-indigo-200'
-                                                                : 'hover:bg-gray-100'
+                                                            ? 'bg-indigo-200'
+                                                            : 'hover:bg-gray-100'
                                                             }`}
                                                     >
                                                         {w.name}
@@ -782,57 +788,13 @@ export default function WarehouseIndex({ warehouses, locations, filters }: Wareh
                                         </div>
 
                                         {/* Create New Location */}
-                                        <div className="mt-6 border-t pt-4">
-                                            <h4 className="font-medium mb-2">Create New Location</h4>
-                                            <form onSubmit={handleCreateNewLocation} className="space-y-3">
-                                                <div>
-                                                    <label className="block text-sm mb-1">Name</label>
-                                                    <input
-                                                        type="text"
-                                                        value={createNewLocationForm.data.name}
-                                                        onChange={e => createNewLocationForm.setData('name', e.target.value)}
-                                                        className="w-full border px-2 py-1 rounded"
-                                                        required
-                                                    />
-                                                    {createNewLocationForm.errors.name && (
-                                                        <div className="text-red-600 text-xs">{createNewLocationForm.errors.name}</div>
-                                                    )}
-                                                </div>
-                                                <div>
-                                                    <label className="block text-sm mb-1">Code</label>
-                                                    <input
-                                                        type="text"
-                                                        value={createNewLocationForm.data.code}
-                                                        onChange={e => createNewLocationForm.setData('code', e.target.value)}
-                                                        className="w-full border px-2 py-1 rounded"
-                                                        required
-                                                    />
-                                                    {createNewLocationForm.errors.code && (
-                                                        <div className="text-red-600 text-xs">{createNewLocationForm.errors.code}</div>
-                                                    )}
-                                                </div>
-                                                <div>
-                                                    <label className="block text-sm mb-1">Description</label>
-                                                    <textarea
-                                                        value={createNewLocationForm.data.description}
-                                                        onChange={e => createNewLocationForm.setData('description', e.target.value)}
-                                                        className="w-full border px-2 py-1 rounded"
-                                                        rows={2}
-                                                    />
-                                                    {createNewLocationForm.errors.description && (
-                                                        <div className="text-red-600 text-xs">{createNewLocationForm.errors.description}</div>
-                                                    )}
-                                                </div>
-                                                <div className="flex justify-end">
-                                                    <button
-                                                        type="submit"
-                                                        disabled={createNewLocationForm.processing}
-                                                        className="px-4 py-2 bg-blue-600 text-white rounded disabled:opacity-50"
-                                                    >
-                                                        {createNewLocationForm.processing ? 'Creating…' : 'Create'}
-                                                    </button>
-                                                </div>
-                                            </form>
+                                        <div className="mt-6 flex justify-end">
+                                            <button
+                                                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                                                onClick={() => setCreateLocationOpen(true)}
+                                            >
+                                                + Create New Location
+                                            </button>
                                         </div>
 
                                         {/* Close */}
@@ -850,6 +812,99 @@ export default function WarehouseIndex({ warehouses, locations, filters }: Wareh
                         </div>
                     </Dialog>
                 </Transition>
+
+                {/* Modal Create new location*/}
+                <Transition appear show={createLocationOpen} as={Fragment}>
+                    <Dialog as="div" className="relative z-50" onClose={() => setCreateLocationOpen(false)}>
+                        <Transition.Child
+                            as={Fragment}
+                            enter="ease-out duration-300"
+                            enterFrom="opacity-0"
+                            enterTo="opacity-100"
+                            leave="ease-in duration-200"
+                            leaveFrom="opacity-100"
+                            leaveTo="opacity-0"
+                        >
+                            <div className="fixed inset-0 bg-black/60" />
+                        </Transition.Child>
+                        <div className="fixed inset-0 flex items-center justify-center p-4">
+                            <Transition.Child
+                                as={Fragment}
+                                enter="ease-out duration-300"
+                                enterFrom="opacity-0 scale-95"
+                                enterTo="opacity-100 scale-100"
+                                leave="ease-in duration-200"
+                                leaveFrom="opacity-100 scale-100"
+                                leaveTo="opacity-0 scale-95"
+                            >
+                                <Dialog.Panel className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+                                    <Dialog.Title className="text-lg font-medium mb-4">Buat Lokasi Baru</Dialog.Title>
+                                    <form
+                                        onSubmit={handleCreateNewLocation}
+                                        className="space-y-4"
+                                    >
+                                        <div>
+                                            <label className="block text-sm mb-1">Nama</label>
+                                            <input
+                                                type="text"
+                                                value={createNewLocationForm.data.name}
+                                                onChange={e => createNewLocationForm.setData('name', e.target.value)}
+                                                className="w-full border px-2 py-1 rounded"
+                                                required
+                                            />
+                                            {createNewLocationForm.errors.name && (
+                                                <div className="text-red-600 text-xs">{createNewLocationForm.errors.name}</div>
+                                            )}
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm mb-1">Kode</label>
+                                            <input
+                                                type="text"
+                                                value={createNewLocationForm.data.code}
+                                                onChange={e => createNewLocationForm.setData('code', e.target.value)}
+                                                className="w-full border px-2 py-1 rounded"
+                                                required
+                                            />
+                                            {createNewLocationForm.errors.code && (
+                                                <div className="text-red-600 text-xs">{createNewLocationForm.errors.code}</div>
+                                            )}
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm mb-1">Deskripsi</label>
+                                            <textarea
+                                                value={createNewLocationForm.data.description}
+                                                onChange={e => createNewLocationForm.setData('description', e.target.value)}
+                                                className="w-full border px-2 py-1 rounded"
+                                                rows={2}
+                                            />
+                                            {createNewLocationForm.errors.description && (
+                                                <div className="text-red-600 text-xs">{createNewLocationForm.errors.description}</div>
+                                            )}
+                                        </div>
+                                        <div className="flex justify-end space-x-2">
+                                            <button
+                                                type="button"
+                                                onClick={() => setCreateLocationOpen(false)}
+                                                className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
+                                                disabled={createNewLocationForm.processing}
+                                            >
+                                                Cancel
+                                            </button>
+                                            <button
+                                                type="submit"
+                                                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                                                disabled={createNewLocationForm.processing}
+                                            >
+                                                {createNewLocationForm.processing ? 'Creating…' : 'Create'}
+                                            </button>
+                                        </div>
+                                    </form>
+                                </Dialog.Panel>
+                            </Transition.Child>
+                        </div>
+                    </Dialog>
+                </Transition>
+
 
                 {/* MODAL MANAJEMEN LOKASI */}
                 <Transition appear show={isLocationManagementOpen} as={Fragment}>
@@ -968,8 +1023,8 @@ export default function WarehouseIndex({ warehouses, locations, filters }: Wareh
                                                                         )}
                                                                         <div className="mt-2">
                                                                             <span className={`inline-flex px-2 py-1 text-xs rounded-full ${location.is_active
-                                                                                    ? 'bg-green-100 text-green-800'
-                                                                                    : 'bg-red-100 text-red-800'
+                                                                                ? 'bg-green-100 text-green-800'
+                                                                                : 'bg-red-100 text-red-800'
                                                                                 }`}>
                                                                                 {location.is_active ? 'Active' : 'Inactive'}
                                                                             </span>
