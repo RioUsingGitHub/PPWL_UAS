@@ -120,7 +120,7 @@ export default function AuthenticatedLayout({ header, children }: Props) {
                         <CubeIcon className="w-6 h-6 text-white" />
                     </div>
                     <div>
-                        <h1 className={font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent ${mobile ? 'text-lg' : 'text-xl'}}>
+                        <h1 className={`font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent ${mobile ? 'text-lg' : 'text-xl'}`}>
                             Inventory
                         </h1>
                         <p className="text-xs text-gray-500 font-medium">Management System</p>
@@ -136,7 +136,7 @@ export default function AuthenticatedLayout({ header, children }: Props) {
                             href={item.href}
                             className={`group relative flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-300 ease-out transform hover:scale-105 ${
                                 isActive 
-                                    ? bg-gradient-to-r ${item.gradient} text-white shadow-lg shadow-blue-200/50 
+                                    ? `bg-gradient-to-r ${item.gradient} text-white shadow-lg shadow-blue-200/50` 
                                     : 'text-gray-600 hover:bg-gradient-to-r hover:from-blue-50 hover:to-cyan-50 hover:text-blue-700 hover:shadow-md'
                             }`}
                         >

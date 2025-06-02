@@ -1,4 +1,4 @@
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, useForm } from '@inertiajs/react';
 import { Settings, Shield, Sparkles, User, X } from 'lucide-react';
 import { FormEventHandler, memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
@@ -141,11 +141,11 @@ const DemoAccountItem = ({
     return (
         <button
             onClick={handleClick}
-            className={relative border-2 text-left ${account.borderColor} ${account.bgColor} group transform rounded-xl px-4 py-3 transition-all duration-200 hover:-translate-y-1 hover:shadow-lg}
-            style={{ animationDelay: ${index * 100}ms }}
+            className={`relative border-2 text-left ${account.borderColor} ${account.bgColor} group transform rounded-xl px-4 py-3 transition-all duration-200 hover:-translate-y-1 hover:shadow-lg`}
+            style={{ animationDelay: `${index * 100}ms` }}
         >
             <div className="flex items-start space-x-3">
-                <div className={flex-shrink-0 rounded-lg bg-gradient-to-r p-2 ${account.color} shadow-lg}>
+                <div className={`flex-shrink-0 rounded-lg bg-gradient-to-r p-2 ${account.color} shadow-lg`}>
                     <IconComponent className="h-5 w-5 text-white" />
                 </div>
 
@@ -410,16 +410,6 @@ export default function Login({ status, canResetPassword = true }: { status?: st
                                     Keep me signed in
                                 </label>
                             </div>
-                            {canResetPassword && (
-                                <div className="text-sm">
-                                    <Link
-                                        href={route('password.request')}
-                                        className="font-medium text-indigo-600 transition-colors hover:text-indigo-500"
-                                    >
-                                        Forgot password?
-                                    </Link>
-                                </div>
-                            )}
                         </div>
 
                         {/* Sign In Button */}
@@ -507,7 +497,7 @@ export default function Login({ status, canResetPassword = true }: { status?: st
 
                         {/* Body: scrollable list with max height */}
                         <div className="p-6">
-                            <div className="grid max-h-64 py-1 gap-4 overflow-y-auto pr-2">{demoAccountItems}</div>
+                            <div className="py-1 grid max-h-64 gap-4 overflow-y-auto pr-2">{demoAccountItems}</div>
                         </div>
 
                         {/* Footer */}
