@@ -106,7 +106,7 @@ class ScanController extends Controller
             $product = Product::with('stockItems.location.warehouse')
                 ->find($validated['product_id']);
 
-            return response()->json([
+            return back()->with([
                 'success' => true,
                 'message' => 'Transaction completed successfully.',
                 'product' => $product,
@@ -234,7 +234,7 @@ class ScanController extends Controller
             }
         });
 
-        return response()->json([
+        return back()->with([
             'success' => true,
             'results' => $results,
             'summary' => [

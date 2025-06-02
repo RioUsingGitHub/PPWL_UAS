@@ -12,7 +12,9 @@ export default function ScanIndex({ locations }) {
     const [scanning, setScanning] = useState(false);
     const [selectedProduct, setSelectedProduct] = useState(null);
     const videoRef = useRef(null);
-    const codeReader = new BrowserMultiFormatReader();
+    const codeReader = useRef(new BrowserMultiFormatReader());
+    // Tambahkan ref untuk menyimpan stream
+    const mediaStreamRef = useRef(null);
 
     const [scanResult, setScanResult] = useState<{
         success: boolean;
@@ -96,28 +98,74 @@ export default function ScanIndex({ locations }) {
 
     const startCamera = async () => {
         try {
-            setScanning(true);
-            const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
-            if (!videoRef.current) return;
-            videoRef.current.srcObject = stream;
-            await videoRef.current.play();
-            codeReader.decodeFromVideoDevice(null, videoRef.current, (result) => {
-                if (result) {
-                    const text = result.getText();
-                    setScanning(false);
-                    codeReader.reset();
-                    stream.getTracks().forEach((t) => t.stop());
-                    setData('barcode', text);
-                    handleBarcodeSubmitViaScanner(text);
-                }
-            });
-        } catch {}
+        setScanning(true);
+        // Dapatkan MediaStream dari kamera
+        const stream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: "environment" },
+        });
+        // Simpan reference stream-nya
+        mediaStreamRef.current = stream;
+
+        if (!videoRef.current) return;
+        videoRef.current.srcObject = stream;
+        await videoRef.current.play();
+
+        codeReader.current.decodeFromVideoDevice(
+            null,
+            videoRef.current,
+            (result, err) => {
+            if (result) {
+                const text = result.getText();
+                setScanning(false);
+                codeReader.current.reset();
+
+                // Hentikan stream ketika sudah sukses memindai
+                stream.getTracks().forEach((t) => t.stop());
+                mediaStreamRef.current = null;
+
+                setData("barcode", text);
+                handleBarcodeSubmitViaScanner(text);
+            }
+            // Jika error, kita abaikan saja (sering muncul error decode berkali-kali)
+            }
+        );
+        } catch (error) {
+        console.error("Error saat membuka kamera:", error);
+        setScanning(false);
+        }
+    };
+
+    const stopCamera = () => {
+        // Reset ZXing
+        codeReader.current.reset();
+        setScanning(false);
+
+        // Jika ada stream yang berjalan, hentikan track-nya
+        if (mediaStreamRef.current) {
+        mediaStreamRef.current.getTracks().forEach((track) => {
+            track.stop();
+        });
+        mediaStreamRef.current = null;
+        }
+
+        // Lepaskan srcObject dari video agar elemen tidak lagi 'mengunci' kamera
+        if (videoRef.current) {
+        videoRef.current.srcObject = null;
+        }
     };
 
     useEffect(() => {
         return () => {
-            codeReader.reset();
-            videoRef.current?.srcObject && videoRef.current.srcObject.getTracks().forEach((t) => t.stop());
+        // Cleanup jika komponen di-unmount
+        codeReader.current.reset();
+        if (mediaStreamRef.current) {
+            mediaStreamRef.current.getTracks().forEach((t) => t.stop());
+            mediaStreamRef.current = null;
+        }
+        if (videoRef.current?.srcObject) {
+            videoRef.current.srcObject.getTracks().forEach((t) => t.stop());
+            videoRef.current.srcObject = null;
+        }
         };
     }, []);
 
@@ -128,7 +176,7 @@ export default function ScanIndex({ locations }) {
             header={
                 // BARCODE SCANNER BAR: Tetap seperti gambar, tidak diubah
                 <h2 className="rounded-lg bg-gradient-to-r from-slate-300 via-cyan-200 to-blue-300 px-6 py-3 text-2xl leading-tight font-bold text-cyan-700 shadow-lg">
-                    Barcode Scanner
+                    Pindai Barcode
                 </h2>
             }
         >
@@ -142,7 +190,7 @@ export default function ScanIndex({ locations }) {
                         <div className="p-8">
                             {/* MANUAL BARCODE INPUT */}
                             <div className="mb-10">
-                                <h3 className="mb-5 text-lg font-bold text-blue-700">Enter Barcode Manually</h3>
+                                <h3 className="mb-5 text-lg font-bold text-blue-700">Cek Produk Manual</h3>
                                 <form onSubmit={handleBarcodeSubmit} className="space-y-4">
                                     <div>
                                         <label htmlFor="barcode" className="mb-1 block text-sm font-medium text-gray-700">
@@ -152,7 +200,7 @@ export default function ScanIndex({ locations }) {
                                             <input
                                                 type="text"
                                                 id="barcode"
-                                                className="flex-1 rounded-l-lg border-none bg-transparent px-4 py-2 text-gray-800 placeholder-gray-400 focus:ring-0"
+                                                className="flex-1 rounded-l-lg border-none bg-transparent px-4 py-2 text-gray-800 placeholder-gray-400 focus:ring-0 min-w-50"
                                                 placeholder="Enter or scan barcode"
                                                 value={data.barcode}
                                                 onChange={(e) => setData('barcode', e.target.value)}
@@ -173,23 +221,21 @@ export default function ScanIndex({ locations }) {
 
                             {/* CAMERA SCANNER */}
                             <div className="mb-10">
-                                <h3 className="mb-5 text-lg font-bold text-blue-700">Camera Scanner</h3>
-                                <div className="mb-4 flex space-x-4">
+                                <h3 className="mb-5 text-lg font-bold text-blue-700">Pindai Kamera</h3>
+                                <div className="mb-4 flex space-x-4 justify-center">
                                     <button
                                         onClick={startCamera}
-                                        className="flex items-center gap-1 rounded-lg bg-gradient-to-r from-green-300 to-cyan-300 px-4 py-2 font-semibold text-gray-800 shadow transition hover:brightness-110"
+                                        className="min-w-30 flex justify-around items-center gap-1 rounded-lg bg-gradient-to-r from-green-300 to-cyan-300 px-4 py-2 font-semibold text-gray-800 shadow transition hover:brightness-110"
                                     >
-                                        <CameraIcon className="h-5 w-5" />
-                                        Start Camera
+                                        <CameraIcon className="h-4 w-4" />
+                                        Mulai
                                     </button>
                                     <button
-                                        onClick={() => {
-                                            codeReader.reset();
-                                            setScanning(false);
-                                        }}
-                                        className="rounded-lg bg-gradient-to-r from-red-200 to-orange-200 px-4 py-2 font-semibold text-gray-800 shadow transition hover:brightness-110"
+                                        onClick={stopCamera}
+                                        className="min-w-30 flex justify-around items-center gap-1 rounded-lg bg-gradient-to-r from-red-200 to-orange-200 px-4 py-2 font-semibold text-gray-800 shadow transition hover:brightness-110"
                                     >
-                                        Stop Camera
+                                        <CameraIcon className="h-4 w-4" />
+                                        Hentikan
                                     </button>
                                 </div>
                                 {scanning && (
