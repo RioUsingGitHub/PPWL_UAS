@@ -39,10 +39,10 @@ class MovementHistoryController extends Controller
 
     public function destroy($id)
     {
-        $movement = \App\Models\MovementHistory::findOrFail($id);
+        $movement = MovementHistory::findOrFail($id);
         $movement->delete();
 
-        return redirect()->route('movement-history.index')
+        return back()
             ->with('message', 'Movement history deleted successfully.');
     }
 }

@@ -4,12 +4,14 @@ namespace App\Http\Controllers;
 
 use App\Models\StockItem;
 use App\Models\Product;
+use App\Models\Warehouse;
 use App\Models\Location;
 use App\Models\MovementHistory;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 class StockItemController extends Controller
 {
@@ -46,11 +48,36 @@ class StockItemController extends Controller
         }
 
         $stockItems = $query->latest()->paginate(20);
-        $warehouses = \App\Models\Warehouse::where('is_active', true)->get(['id', 'name']);
+        
+        $warehouseses = Warehouse::with(['locations' => function ($q) {
+            $q->withCount('stockItems');
+        }])
+        ->withCount('locations');
+
+        $warehouses = $warehouseses->latest()->paginate(10);
+
+        Log::debug('warehouses fetched:', $warehouses->toArray());
+
+        $locations = Location::query()
+        ->select([
+            'id',
+            'warehouse_id',
+            'name',
+            'code',
+            DB::raw('LEFT(description, 256) as description'),
+            'is_active',
+            'created_at',
+            'updated_at',
+        ])
+        ->limit(1000)
+        ->get();
+
+        Log::debug('Locations fetched:', $locations->toArray());
 
         return Inertia::render('Stock/Index', [
             'stock_items' => $stockItems,
             'warehouses' => $warehouses,
+            'locations' => $locations,
             'filters' => $request->only(['search', 'warehouse_id', 'low_stock', 'expired']),
         ]);
     }

@@ -47,9 +47,11 @@ class ScanController extends Controller
             ], 404);
         }
 
-        return inertia('ScanResultComponent', [
+        
+
+        return response()->json([
             'success' => true,
-            'product' => $product,
+            'product' => $product
         ]);
     }
 

@@ -23,12 +23,12 @@ class WarehouseController extends Controller
         $query = Warehouse::with(['locations' => function ($q) {
             $q->withCount('stockItems');
         }])
-            ->withCount('locations'); // Add this line to get locations_count
+        ->withCount('locations'); // Add this line to get locations_count
 
         if ($request->search) {
             $query->where(function ($q) use ($request) {
                 $q->where('name', 'like', '%' . $request->search . '%')
-                    ->orWhere('code', 'like', '%' . $request->search . '%');
+                ->orWhere('code', 'like', '%' . $request->search . '%');
             });
         }
 
@@ -36,18 +36,21 @@ class WarehouseController extends Controller
 
         // Keep locations query if needed for other purposes
         $locations = Location::query()
-            ->select([
-                'id',
-                'warehouse_id',
-                'name',
-                'code',
-                DB::raw('LEFT(description, 256) as description'),
-                'is_active',
-                'created_at',
-                'updated_at',
-            ])
-            ->limit(1000)
-            ->get();
+        ->select([
+            'id',
+            'warehouse_id',
+            'name',
+            'code',
+            DB::raw('LEFT(description, 256) as description'),
+            'is_active',
+            'created_at',
+            'updated_at',
+        ])
+        ->limit(1000)
+        ->get();
+
+        // log warehouses for debugging
+        Log::debug('Warehouses fetched:', $warehouses->toArray());
 
         // log locations for debugging
         Log::debug('Locations fetched:', $locations->toArray());

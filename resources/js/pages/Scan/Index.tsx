@@ -1,15 +1,27 @@
-import { useState, useRef, useEffect } from 'react';
-import { Head, useForm } from '@inertiajs/react';
 import AuthenticatedLayout from '@/layouts/AuthenticatedLayout';
-import { QrCodeIcon, CameraIcon } from '@heroicons/react/24/outline';
+import { CameraIcon, QrCodeIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { Head, useForm } from '@inertiajs/react';
 import { BrowserMultiFormatReader } from '@zxing/library';
+import { useEffect, useRef, useState } from 'react';
+import { toast } from 'sonner';
+import { Dialog, Transition } from '@headlessui/react';
+import { Fragment } from 'react';
+import { PageProps, Product } from '@/types';
 
 export default function ScanIndex({ locations }) {
-    const [scanResult, setScanResult] = useState(null);
     const [scanning, setScanning] = useState(false);
     const [selectedProduct, setSelectedProduct] = useState(null);
     const videoRef = useRef(null);
     const codeReader = new BrowserMultiFormatReader();
+
+    const [scanResult, setScanResult] = useState<{
+        success: boolean;
+        message?: string;
+        product?: any;
+    } | null>(null);
+
+    // State untuk menandakan modal terbuka atau tidak
+    const [modalOpen, setModalOpen] = useState(false);
 
     const { data, setData, post, processing, errors, reset } = useForm({
         barcode: '',
@@ -20,19 +32,45 @@ export default function ScanIndex({ locations }) {
         product_id: 0,
     });
 
-    const handleBarcodeSubmit = (e) => {
+    const handleBarcodeSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!data.barcode) return;
+
         setScanning(true);
-        post('/scan/product', {
-            data: { barcode: data.barcode },
-            onSuccess: (result) => {
+        setScanResult(null);
+        setModalOpen(false);
+
+        try {
+            const response = await fetch('/scan/product', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                    Accept: 'application/json',
+                },
+                body: JSON.stringify({ barcode: data.barcode }),
+            });
+
+            if (!response.ok) {
+                // Kalau status 404 atau error lain, ambil pesan dari JSON
+                const err = await response.json();
+                setScanResult({
+                    success: false,
+                    message: err.message || 'Terjadi kesalahan saat memindai',
+                });
+            } else {
+                const result = await response.json();
                 setScanResult(result);
-                setSelectedProduct(result.product ?? null);
-            },
-            onError: () => {},
-            onFinish: () => setScanning(false),
-        });
+            }
+        } catch (error) {
+            setScanResult({
+                success: false,
+                message: 'Gagal terhubung ke server',
+            });
+        } finally {
+            setScanning(false);
+            setModalOpen(true);
+        }
     };
 
     const handleBarcodeSubmitViaScanner = async (barcode) => {
@@ -68,7 +106,7 @@ export default function ScanIndex({ locations }) {
                     const text = result.getText();
                     setScanning(false);
                     codeReader.reset();
-                    stream.getTracks().forEach(t => t.stop());
+                    stream.getTracks().forEach((t) => t.stop());
                     setData('barcode', text);
                     handleBarcodeSubmitViaScanner(text);
                 }
@@ -79,16 +117,17 @@ export default function ScanIndex({ locations }) {
     useEffect(() => {
         return () => {
             codeReader.reset();
-            videoRef.current?.srcObject &&
-                (videoRef.current.srcObject).getTracks().forEach((t) => t.stop());
+            videoRef.current?.srcObject && videoRef.current.srcObject.getTracks().forEach((t) => t.stop());
         };
     }, []);
+
+    const totalStock = (product: Product) => product.stock_items?.reduce((sum, item) => sum + item.quantity, 0) ?? 0;
 
     return (
         <AuthenticatedLayout
             header={
                 // BARCODE SCANNER BAR: Tetap seperti gambar, tidak diubah
-                <h2 className="font-bold text-2xl text-cyan-700 leading-tight bg-gradient-to-r from-slate-300 via-cyan-200 to-blue-300 px-6 py-3 rounded-lg shadow-lg">
+                <h2 className="rounded-lg bg-gradient-to-r from-slate-300 via-cyan-200 to-blue-300 px-6 py-3 text-2xl leading-tight font-bold text-cyan-700 shadow-lg">
                     Barcode Scanner
                 </h2>
             }
@@ -97,26 +136,23 @@ export default function ScanIndex({ locations }) {
 
             {/* SOFT GRADIENT BACKGROUND */}
             <div>
-                <div className="max-w-4xl mx-auto sm:px-6 lg:px-8">
+                <div className="mx-auto max-w-4xl sm:px-6 lg:px-8">
                     {/* CARD CONTAINER */}
-                    <div className="bg-white/90 overflow-hidden shadow-xl sm:rounded-2xl border border-blue-100">
+                    <div className="overflow-hidden border border-blue-100 bg-white/90 shadow-xl sm:rounded-2xl">
                         <div className="p-8">
-
                             {/* MANUAL BARCODE INPUT */}
                             <div className="mb-10">
-                                <h3 className="text-lg font-bold text-blue-700 mb-5">
-                                    Enter Barcode Manually
-                                </h3>
+                                <h3 className="mb-5 text-lg font-bold text-blue-700">Enter Barcode Manually</h3>
                                 <form onSubmit={handleBarcodeSubmit} className="space-y-4">
                                     <div>
-                                        <label htmlFor="barcode" className="block text-sm font-medium text-gray-700 mb-1">
+                                        <label htmlFor="barcode" className="mb-1 block text-sm font-medium text-gray-700">
                                             Barcode
                                         </label>
-                                        <div className="mt-1 flex rounded-lg shadow-sm bg-gradient-to-r from-blue-50 via-cyan-50 to-blue-100">
+                                        <div className="mt-1 flex rounded-lg bg-gradient-to-r from-blue-50 via-cyan-50 to-blue-100 shadow-sm">
                                             <input
                                                 type="text"
                                                 id="barcode"
-                                                className="flex-1 rounded-l-lg border-none bg-transparent focus:ring-0 px-4 py-2 text-gray-800 placeholder-gray-400"
+                                                className="flex-1 rounded-l-lg border-none bg-transparent px-4 py-2 text-gray-800 placeholder-gray-400 focus:ring-0"
                                                 placeholder="Enter or scan barcode"
                                                 value={data.barcode}
                                                 onChange={(e) => setData('barcode', e.target.value)}
@@ -124,35 +160,34 @@ export default function ScanIndex({ locations }) {
                                             <button
                                                 type="submit"
                                                 disabled={scanning || !data.barcode}
-                                                className="flex items-center gap-1 px-4 py-2 rounded-r-lg bg-gradient-to-r from-cyan-400 to-blue-400 text-white font-semibold hover:brightness-110 transition"
+                                                className="flex items-center gap-1 rounded-r-lg bg-gradient-to-r from-cyan-400 to-blue-400 px-4 py-2 font-semibold text-white transition hover:brightness-110"
                                             >
-                                                <QrCodeIcon className="w-5 h-5" />
+                                                <QrCodeIcon className="h-5 w-5" />
                                                 {scanning ? 'Scanning...' : 'Scan'}
                                             </button>
                                         </div>
-                                        {errors.barcode && (
-                                            <div className="text-red-600 text-sm mt-1">{errors.barcode}</div>
-                                        )}
+                                        {errors.barcode && <div className="mt-1 text-sm text-red-600">{errors.barcode}</div>}
                                     </div>
                                 </form>
                             </div>
 
                             {/* CAMERA SCANNER */}
                             <div className="mb-10">
-                                <h3 className="text-lg font-bold text-blue-700 mb-5">
-                                    Camera Scanner
-                                </h3>
-                                <div className="flex space-x-4 mb-4">
+                                <h3 className="mb-5 text-lg font-bold text-blue-700">Camera Scanner</h3>
+                                <div className="mb-4 flex space-x-4">
                                     <button
                                         onClick={startCamera}
-                                        className="flex items-center gap-1 px-4 py-2 rounded-lg bg-gradient-to-r from-green-300 to-cyan-300 text-gray-800 font-semibold shadow hover:brightness-110 transition"
+                                        className="flex items-center gap-1 rounded-lg bg-gradient-to-r from-green-300 to-cyan-300 px-4 py-2 font-semibold text-gray-800 shadow transition hover:brightness-110"
                                     >
-                                        <CameraIcon className="w-5 h-5" />
+                                        <CameraIcon className="h-5 w-5" />
                                         Start Camera
                                     </button>
                                     <button
-                                        onClick={() => { codeReader.reset(); setScanning(false); }}
-                                        className="px-4 py-2 rounded-lg bg-gradient-to-r from-red-200 to-orange-200 text-gray-800 font-semibold shadow hover:brightness-110 transition"
+                                        onClick={() => {
+                                            codeReader.reset();
+                                            setScanning(false);
+                                        }}
+                                        className="rounded-lg bg-gradient-to-r from-red-200 to-orange-200 px-4 py-2 font-semibold text-gray-800 shadow transition hover:brightness-110"
                                     >
                                         Stop Camera
                                     </button>
@@ -160,7 +195,7 @@ export default function ScanIndex({ locations }) {
                                 {scanning && (
                                     <video
                                         ref={videoRef}
-                                        className="w-full max-w-md border-2 border-cyan-200 rounded-xl shadow-lg"
+                                        className="w-full max-w-md rounded-xl border-2 border-cyan-200 shadow-lg"
                                         playsInline
                                         muted
                                         autoPlay
@@ -168,59 +203,121 @@ export default function ScanIndex({ locations }) {
                                 )}
                             </div>
 
-                            {/* SCAN RESULT */}
-                            {scanResult && (
-                                <div className="mb-10">
-                                    {scanResult.success ? (
-                                        <div className="bg-green-50 border border-green-200 rounded-lg p-4 shadow">
-                                            <h4 className="text-lg font-bold text-green-800 mb-2">
-                                                Product Found
-                                            </h4>
-                                            {selectedProduct && (
-                                                <div className="space-y-1 text-gray-700">
-                                                    <p><strong>Name:</strong> {selectedProduct.name}</p>
-                                                    <p><strong>SKU:</strong> {selectedProduct.sku}</p>
-                                                    <p><strong>Unit:</strong> {selectedProduct.unit}</p>
-                                                    <p><strong>Current Stock:</strong> {selectedProduct.total_stock || 0}</p>
-                                                </div>
+                            {/* ---------- MODAL UNTUK MENAMPILKAN HASIL SCAN ---------- */}
+                            {modalOpen && scanResult && (
+                                <div className="bg-opacity-50 fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+                                    <div className="mx-4 w-full max-w-lg rounded-lg bg-white shadow-lg">
+                                        <div className="flex items-center justify-between border-b px-4 py-2">
+                                            <h2 className="text-xl font-semibold">
+                                                {scanResult.success ? 'Produk Ditemukan' : 'Produk Tidak Ditemukan'}
+                                            </h2>
+                                            <button
+                                                onClick={() => {
+                                                    setModalOpen(false);
+                                                    setScanResult(null);
+                                                }}
+                                                className="text-gray-500 hover:text-gray-800"
+                                            >
+                                                <XMarkIcon className="h-6 w-6" />
+                                            </button>
+                                        </div>
+                                        <div className="p-4">
+                                            {!scanResult.success ? (
+                                                <p className="text-red-600">{scanResult.message}</p>
+                                            ) : (
+                                                <>
+                                                    <div className="mb-4 space-y-1 text-gray-700">
+                                                        <p>
+                                                            <strong>Nama Produk:</strong> {scanResult.product.name}
+                                                        </p>
+                                                        <p>
+                                                            <strong>Kode Barcode:</strong> {scanResult.product.barcode}
+                                                        </p>
+                                                        <p>
+                                                            <strong>SKU:</strong> {scanResult.product.sku}
+                                                        </p>
+                                                        <p>
+                                                            <strong>Harga:</strong> Rp {scanResult.product.price}
+                                                        </p>
+                                                        <p>
+                                                            <strong>Kategori:</strong> {scanResult.product.category}
+                                                        </p>
+                                                        <p>
+                                                            <strong>Deskripsi:</strong> {scanResult.product.description}
+                                                        </p>
+                                                        <p>
+                                                            <strong>Satuan:</strong> {scanResult.product.unit}
+                                                        </p>
+                                                        <p>
+                                                            <strong>Stok Saat Ini:</strong> {totalStock(scanResult.product || 0)}
+                                                        </p>
+                                                    </div>
+                                                    <div>
+                                                        <h3 className="mb-2 font-semibold">Detail Stok di Lokasi:</h3>
+                                                        {scanResult.product.stock_items.length ? (
+                                                            <ul className="max-h-48 space-y-2 overflow-y-auto">
+                                                                {scanResult.product.stock_items.map((si: any) => (
+                                                                    <li key={si.id} className="rounded-md border bg-gray-50 p-2">
+                                                                        <p>
+                                                                            <strong>Lokasi:</strong> {si.location.name} ({si.location.code})
+                                                                        </p>
+                                                                        <p>
+                                                                            <strong>Gudang:</strong> {si.location.warehouse.name}
+                                                                        </p>
+                                                                        <p>
+                                                                            <strong>Jumlah:</strong> {si.quantity}
+                                                                        </p>
+                                                                        <p>
+                                                                            <strong>Harga Modal:</strong> Rp {si.unit_cost}
+                                                                        </p>
+                                                                    </li>
+                                                                ))}
+                                                            </ul>
+                                                        ) : (
+                                                            <p className="text-gray-600">Tidak ada data stok untuk produk ini.</p>
+                                                        )}
+                                                    </div>
+                                                </>
                                             )}
                                         </div>
-                                    ) : (
-                                        <div className="bg-red-50 border border-red-200 rounded-lg p-4 shadow">
-                                            <h4 className="text-lg font-bold text-red-800 mb-2">
-                                                Product Not Found
-                                            </h4>
-                                            <p className="text-red-700">{scanResult.message}</p>
+                                        <div className="flex justify-end border-t px-4 py-2">
+                                            <button
+                                                onClick={() => setModalOpen(false)}
+                                                className="rounded-md bg-gray-200 px-4 py-2 transition hover:bg-gray-300"
+                                            >
+                                                Tutup
+                                            </button>
                                         </div>
-                                    )}
+                                    </div>
                                 </div>
                             )}
 
                             {/* QUICK TRANSACTION */}
                             {selectedProduct && (
-                                <div className="bg-blue-50/60 rounded-xl p-6 shadow border border-blue-100">
-                                    <h3 className="text-lg font-bold text-blue-700 mb-4">
-                                        Quick Transaction
-                                    </h3>
-                                    <form onSubmit={(e) => {
-                                        e.preventDefault();
-                                        setData('product_id', selectedProduct.id);
-                                        post('/scan/transaction', {
-                                            onSuccess: () => {
-                                                reset();
-                                                setSelectedProduct(null);
-                                                setScanResult(null);
-                                            },
-                                        });
-                                    }} className="space-y-4">
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="rounded-xl border border-blue-100 bg-blue-50/60 p-6 shadow">
+                                    <h3 className="mb-4 text-lg font-bold text-blue-700">Quick Transaction</h3>
+                                    <form
+                                        onSubmit={(e) => {
+                                            e.preventDefault();
+                                            setData('product_id', selectedProduct.id);
+                                            post('/scan/transaction', {
+                                                onSuccess: () => {
+                                                    reset();
+                                                    setSelectedProduct(null);
+                                                    setScanResult(null);
+                                                },
+                                            });
+                                        }}
+                                        className="space-y-4"
+                                    >
+                                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                                             <div>
                                                 <label htmlFor="location_id" className="block text-sm font-medium text-gray-700">
                                                     Location
                                                 </label>
                                                 <select
                                                     id="location_id"
-                                                    className="mt-1 form-select w-full rounded-md border-blue-200"
+                                                    className="form-select mt-1 w-full rounded-md border-blue-200"
                                                     value={data.location_id}
                                                     onChange={(e) => setData('location_id', e.target.value)}
                                                     required
@@ -232,9 +329,7 @@ export default function ScanIndex({ locations }) {
                                                         </option>
                                                     ))}
                                                 </select>
-                                                {errors.location_id && (
-                                                    <div className="text-red-600 text-sm mt-1">{errors.location_id}</div>
-                                                )}
+                                                {errors.location_id && <div className="mt-1 text-sm text-red-600">{errors.location_id}</div>}
                                             </div>
                                             <div>
                                                 <label htmlFor="type" className="block text-sm font-medium text-gray-700">
@@ -242,7 +337,7 @@ export default function ScanIndex({ locations }) {
                                                 </label>
                                                 <select
                                                     id="type"
-                                                    className="mt-1 form-select w-full rounded-md border-blue-200"
+                                                    className="form-select mt-1 w-full rounded-md border-blue-200"
                                                     value={data.type}
                                                     onChange={(e) => setData('type', e.target.value)}
                                                 >
@@ -258,14 +353,12 @@ export default function ScanIndex({ locations }) {
                                                     type="number"
                                                     id="quantity"
                                                     min="1"
-                                                    className="mt-1 form-input w-full rounded-md border-blue-200"
+                                                    className="form-input mt-1 w-full rounded-md border-blue-200"
                                                     value={data.quantity}
                                                     onChange={(e) => setData('quantity', parseInt(e.target.value))}
                                                     required
                                                 />
-                                                {errors.quantity && (
-                                                    <div className="text-red-600 text-sm mt-1">{errors.quantity}</div>
-                                                )}
+                                                {errors.quantity && <div className="mt-1 text-sm text-red-600">{errors.quantity}</div>}
                                             </div>
                                             <div>
                                                 <label htmlFor="notes" className="block text-sm font-medium text-gray-700">
@@ -274,17 +367,17 @@ export default function ScanIndex({ locations }) {
                                                 <input
                                                     type="text"
                                                     id="notes"
-                                                    className="mt-1 form-input w-full rounded-md border-blue-200"
+                                                    className="form-input mt-1 w-full rounded-md border-blue-200"
                                                     value={data.notes}
                                                     onChange={(e) => setData('notes', e.target.value)}
                                                 />
                                             </div>
                                         </div>
-                                        <div className="flex space-x-4 mt-2">
+                                        <div className="mt-2 flex space-x-4">
                                             <button
                                                 type="submit"
                                                 disabled={processing}
-                                                className="rounded-md bg-gradient-to-r from-cyan-500 to-blue-500 px-4 py-2 text-white font-semibold shadow hover:brightness-110 transition"
+                                                className="rounded-md bg-gradient-to-r from-cyan-500 to-blue-500 px-4 py-2 font-semibold text-white shadow transition hover:brightness-110"
                                             >
                                                 {processing ? 'Processing...' : 'Submit Transaction'}
                                             </button>
@@ -295,7 +388,7 @@ export default function ScanIndex({ locations }) {
                                                     setSelectedProduct(null);
                                                     setScanResult(null);
                                                 }}
-                                                className="rounded-md bg-gradient-to-r from-gray-200 to-gray-100 px-4 py-2 text-gray-700 font-semibold shadow hover:bg-gray-300 transition"
+                                                className="rounded-md bg-gradient-to-r from-gray-200 to-gray-100 px-4 py-2 font-semibold text-gray-700 shadow transition hover:bg-gray-300"
                                             >
                                                 Reset
                                             </button>
@@ -303,7 +396,6 @@ export default function ScanIndex({ locations }) {
                                     </form>
                                 </div>
                             )}
-
                         </div>
                     </div>
                 </div>
