@@ -14,47 +14,47 @@ class DashboardController extends Controller
 {
     public function index()
     {
-        $totalProducts = Product::where('is_active', true)->count();
-        $totalUsers = User::where('is_active', true)->count();
-        $totalWarehouses = Warehouse::where('is_active', true)->count();
+        $totalProduk = Product::where('is_active', true)->count();
+        $totalPengguna = User::where('is_active', true)->count();
+        $totalGudang = Warehouse::where('is_active', true)->count();
         
-        $lowStockProducts = Product::with('stockItems')
+        $produkStokRendah = Product::with('stockItems')
             ->where('is_active', true)
             ->get()
-            ->filter(function ($product) {
-                return $product->total_stock <= $product->min_stock;
+            ->filter(function ($produk) {
+                return $produk->total_stock <= $produk->min_stock;
             })
             ->count();
 
-        $recentMovements = MovementHistory::with(['product', 'location.warehouse', 'user'])
+        $daftarAudit = MovementHistory::with(['product', 'location.warehouse', 'user'])
             ->latest()
             ->take(10)
             ->get();
 
-        $stockByWarehouse = Warehouse::with(['locations.stockItems.product'])
+        $stokPerGudang = Warehouse::with(['locations.stockItems.product'])
             ->where('is_active', true)
             ->get()
-            ->map(function ($warehouse) {
-                $totalValue = $warehouse->locations->flatMap->stockItems->sum(function ($stock) {
+            ->map(function ($gudang) {
+                $totalNilai = $Gudang->locations->flatMap->stockItems->sum(function ($stock) {
                     return $stock->quantity * $stock->product->price;
                 });
                 
                 return [
-                    'name' => $warehouse->name,
-                    'total_items' => $warehouse->locations->flatMap->stockItems->sum('quantity'),
-                    'total_value' => $totalValue,
+                    'nama' => $gudang->name,
+                    'total_item' => $gudang->locations->flatMap->stockItems->sum('quantity'),
+                    'total_nilai' => $totalNilai,
                 ];
             });
 
         return Inertia::render('dashboard', [
-            'stats' => [
-                'total_products' => $totalProducts,
-                'total_users' => $totalUsers,
-                'total_warehouses' => $totalWarehouses,
-                'low_stock_products' => $lowStockProducts,
+            'statistik' => [
+                'total_produk' => $totalProduk,
+                'total_pengguna' => $totalPengguna,
+                'total_gudang' => $totalGudang,
+                'produk_stok_rendah' => $produkStokRendah,
             ],
-            'recent_movements' => $recentMovements,
-            'stock_by_warehouse' => $stockByWarehouse,
+            'daftar_audit' => $daftarAudit,
+            'stok_per_gudang' => $stockPerGudang,
         ]);
     }
 }
