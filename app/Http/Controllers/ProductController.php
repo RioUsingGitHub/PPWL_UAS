@@ -37,18 +37,13 @@ class ProductController extends Controller
 
         $products = $query->latest()->paginate(15);
 
-        $categories = Product::distinct()->pluck('category')->filter();
+        $categories = Product::distinct()->pluck('category')->filter()->values();
 
         return Inertia::render('Products/Index', [
             'products' => $products,
             'categories' => $categories,
             'filters' => $request->only(['search', 'category', 'low_stock']),
         ]);
-    }
-
-    public function create()
-    {
-        return Inertia::render('Products/Create');
     }
 
     public function store(Request $request)
@@ -72,27 +67,6 @@ class ProductController extends Controller
 
         return redirect()->route('products.index')
             ->with('message', 'Product created successfully.');
-    }
-
-    public function show(Product $product)
-    {
-        $product->load([
-            'stockItems.location.warehouse',
-            'movementHistories' => function ($query) {
-                $query->with(['location.warehouse', 'user'])->latest()->take(20);
-            }
-        ]);
-
-        return Inertia::render('Products/Show', [
-            'product' => $product,
-        ]);
-    }
-
-    public function edit(Product $product)
-    {
-        return Inertia::render('Products/Edit', [
-            'product' => $product,
-        ]);
     }
 
     public function update(Request $request, Product $product)
@@ -131,7 +105,7 @@ class ProductController extends Controller
 
         $product->delete();
 
-        return redirect()->route('products.index')
+        return back()
             ->with('message', 'Product deleted successfully.');
     }
 

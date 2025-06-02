@@ -7,6 +7,8 @@ use App\Models\Location;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
 
 class WarehouseController extends Controller
 {
@@ -15,23 +17,47 @@ class WarehouseController extends Controller
         $this->middleware('permission:manage-warehouses');
     }
 
+    // Fix: Update the index method to properly load locations count
     public function index(Request $request)
     {
         $query = Warehouse::with(['locations' => function ($q) {
             $q->withCount('stockItems');
-        }]);
+        }])
+        ->withCount('locations'); // Add this line to get locations_count
 
         if ($request->search) {
             $query->where(function ($q) use ($request) {
                 $q->where('name', 'like', '%' . $request->search . '%')
-                  ->orWhere('code', 'like', '%' . $request->search . '%');
+                ->orWhere('code', 'like', '%' . $request->search . '%');
             });
         }
 
         $warehouses = $query->latest()->paginate(10);
 
+        // Keep locations query if needed for other purposes
+        $locations = Location::query()
+        ->select([
+            'id',
+            'warehouse_id',
+            'name',
+            'code',
+            DB::raw('LEFT(description, 256) as description'),
+            'is_active',
+            'created_at',
+            'updated_at',
+        ])
+        ->limit(1000)
+        ->get();
+
+        // log warehouses for debugging
+        Log::debug('Warehouses fetched:', $warehouses->toArray());
+
+        // log locations for debugging
+        Log::debug('Locations fetched:', $locations->toArray());
+
         return Inertia::render('Warehouses/Index', [
             'warehouses' => $warehouses,
+            'locations' => $locations,
             'filters' => $request->only(['search']),
         ]);
     }
@@ -104,16 +130,9 @@ class WarehouseController extends Controller
             ->latest()
             ->paginate(15);
 
-        return Inertia::render('Warehouses/Locations', [
+        return Inertia::render('Warehouses/Index', [
             'warehouse' => $warehouse,
             'locations' => $locations,
-        ]);
-    }
-
-    public function createLocation(Warehouse $warehouse)
-    {
-        return Inertia::render('Warehouses/CreateLocation', [
-            'warehouse' => $warehouse,
         ]);
     }
 
@@ -129,16 +148,8 @@ class WarehouseController extends Controller
 
         Location::create($validated);
 
-        return redirect()->route('warehouses.locations', $warehouse)
+        return back()
             ->with('message', 'Location created successfully.');
-    }
-
-    public function editLocation(Warehouse $warehouse, Location $location)
-    {
-        return Inertia::render('Warehouses/EditLocation', [
-            'warehouse' => $warehouse,
-            'location' => $location,
-        ]);
     }
 
     public function updateLocation(Request $request, Warehouse $warehouse, Location $location)
@@ -152,7 +163,7 @@ class WarehouseController extends Controller
 
         $location->update($validated);
 
-        return redirect()->route('warehouses.locations', $warehouse)
+        return back()
             ->with('message', 'Location updated successfully.');
     }
 
@@ -160,7 +171,7 @@ class WarehouseController extends Controller
     {
         $location->delete();
 
-        return redirect()->route('warehouses.locations', $warehouse)
+        return back()
             ->with('message', 'Location deleted successfully.');
     }
 }

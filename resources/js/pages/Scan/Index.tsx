@@ -1,36 +1,35 @@
-import { useState, useRef, useEffect } from 'react';
-import { Head, useForm } from '@inertiajs/react';
 import AuthenticatedLayout from '@/layouts/AuthenticatedLayout';
-import { PageProps, Location, Product, ScanResult } from '@/types';
-import { QrCodeIcon, CameraIcon } from '@heroicons/react/24/outline';
+import { CameraIcon, QrCodeIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { Head, useForm } from '@inertiajs/react';
 import { BrowserMultiFormatReader } from '@zxing/library';
+import { useEffect, useRef, useState } from 'react';
+import { toast } from 'sonner';
+import { Dialog, Transition } from '@headlessui/react';
+import { Fragment } from 'react';
+import { PageProps, Product } from '@/types';
 
-interface ScanPageProps extends PageProps {
-    locations: Location[];
-}
-
-export default function ScanIndex({ locations }: ScanPageProps) {
-    const [scanResult, setScanResult] = useState<ScanResult | null>(null);
+export default function ScanIndex({ locations }) {
     const [scanning, setScanning] = useState(false);
-    const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-    const videoRef = useRef<HTMLVideoElement>(null);
-    const canvasRef = useRef<HTMLCanvasElement>(null);
+    const [selectedProduct, setSelectedProduct] = useState(null);
+    const videoRef = useRef(null);
     const codeReader = new BrowserMultiFormatReader();
 
-    const { data, setData, post, processing, errors, reset } = useForm<{
-        barcode: string;
-        location_id: string;
-        type: 'in' | 'out';
-        quantity: number;
-        notes: string;
-        product_id: number;       // ← new
-        }>({
+    const [scanResult, setScanResult] = useState<{
+        success: boolean;
+        message?: string;
+        product?: any;
+    } | null>(null);
+
+    // State untuk menandakan modal terbuka atau tidak
+    const [modalOpen, setModalOpen] = useState(false);
+
+    const { data, setData, post, processing, errors, reset } = useForm({
         barcode: '',
         location_id: '',
         type: 'in',
         quantity: 1,
         notes: '',
-        product_id: 0,            // ← initial default
+        product_id: 0,
     });
 
     const handleBarcodeSubmit = async (e: React.FormEvent) => {
@@ -38,67 +37,56 @@ export default function ScanIndex({ locations }: ScanPageProps) {
         if (!data.barcode) return;
 
         setScanning(true);
+        setScanResult(null);
+        setModalOpen(false);
+
         try {
-            post('/scan/product', {
-                data: { barcode: data.barcode },
-                onSuccess: (result: ScanResult) => {
-                    setScanResult(result);
-                    setSelectedProduct(result.product ?? null);
+            const response = await fetch('/scan/product', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                    Accept: 'application/json',
                 },
-                onError: (errors: Record<string, string>) => {
-                    console.error(errors);
-                },
+                body: JSON.stringify({ barcode: data.barcode }),
             });
 
+            if (!response.ok) {
+                // Kalau status 404 atau error lain, ambil pesan dari JSON
+                const err = await response.json();
+                setScanResult({
+                    success: false,
+                    message: err.message || 'Terjadi kesalahan saat memindai',
+                });
+            } else {
+                const result = await response.json();
+                setScanResult(result);
+            }
         } catch (error) {
-            console.error('Scan error:', error);
             setScanResult({
                 success: false,
-                message: 'Failed to scan product',
+                message: 'Gagal terhubung ke server',
             });
         } finally {
             setScanning(false);
+            setModalOpen(true);
         }
     };
 
-    const handleTransaction = (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!selectedProduct || !data.location_id) return;
-
-        setData('product_id', selectedProduct.id);
-        setData('location_id', data.location_id);
-        setData('type', data.type);
-        setData('quantity', data.quantity);
-        setData('notes', data.notes);
-
-        post('/scan/transaction', {
-            onSuccess: () => {
-            reset();          // clears all fields back to initial
-            setSelectedProduct(null);
-            setScanResult(null);
-            },
-        });
-    };
-
-    const handleBarcodeSubmitViaScanner = async (barcode: string) => {
+    const handleBarcodeSubmitViaScanner = async (barcode) => {
         setScanning(true);
-
         try {
-        const response = await fetch('/scan/product', {
-            method: 'POST',
-            headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-TOKEN':
-                document
-                .querySelector('meta[name="csrf-token"]')
-                ?.getAttribute('content') || '',
-            },
-            body: JSON.stringify({ barcode }),
-        });
-
-        const result = await response.json() as ScanResult;
-        setScanResult(result);
-        if (result.success) setSelectedProduct(result.product ?? null);
+            const response = await fetch('/scan/product', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                },
+                body: JSON.stringify({ barcode }),
+            });
+            const result = await response.json();
+            setScanResult(result);
+            if (result.success) setSelectedProduct(result.product ?? null);
         } catch {
             setScanResult({ success: false, message: 'Failed to scan' });
         } finally {
@@ -109,89 +97,62 @@ export default function ScanIndex({ locations }: ScanPageProps) {
     const startCamera = async () => {
         try {
             setScanning(true);
-            const stream = await navigator.mediaDevices.getUserMedia({
-            video: { facingMode: 'environment' },
-            });
+            const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
             if (!videoRef.current) return;
             videoRef.current.srcObject = stream;
             await videoRef.current.play();
-
-            // continuously scan, until you call codeReader.reset()
-            codeReader.decodeFromVideoDevice(null, videoRef.current, (result, err) => {
-            if (result) {
-                const text = result.getText();
-                setScanning(false);
-                codeReader.reset();           // stop decoding loop
-                stream.getTracks().forEach(t => t.stop());
-                setData('barcode', text);
-                handleBarcodeSubmitViaScanner(text);
-            }
-            // ignore errors (e.g. "no QR found in this frame")
+            codeReader.decodeFromVideoDevice(null, videoRef.current, (result) => {
+                if (result) {
+                    const text = result.getText();
+                    setScanning(false);
+                    codeReader.reset();
+                    stream.getTracks().forEach((t) => t.stop());
+                    setData('barcode', text);
+                    handleBarcodeSubmitViaScanner(text);
+                }
             });
-        } catch (error) {
-            console.error('Camera error:', error);
-        }
-    };
-
-
-    const captureImage = () => {
-        if (videoRef.current && canvasRef.current) {
-            const canvas = canvasRef.current;
-            const video = videoRef.current;
-            const context = canvas.getContext('2d');
-            
-            if (context) {
-                canvas.width = video.videoWidth;
-                canvas.height = video.videoHeight;
-                context.drawImage(video, 0, 0);
-                
-                // Here you would integrate with a barcode scanning library
-                // For now, we'll just show a placeholder
-                alert('Barcode scanning from camera would be implemented here using libraries like QuaggaJS or ZXing');
-            }
-        }
+        } catch {}
     };
 
     useEffect(() => {
         return () => {
-            codeReader.reset();      // stop any ongoing decode loops
-            videoRef.current?.srcObject &&
-            (videoRef.current.srcObject as MediaStream)
-                .getTracks()
-                .forEach((t) => t.stop());
+            codeReader.reset();
+            videoRef.current?.srcObject && videoRef.current.srcObject.getTracks().forEach((t) => t.stop());
         };
     }, []);
 
+    const totalStock = (product: Product) => product.stock_items?.reduce((sum, item) => sum + item.quantity, 0) ?? 0;
 
     return (
         <AuthenticatedLayout
             header={
-                <h2 className="font-semibold text-xl text-gray-800 leading-tight">
+                // BARCODE SCANNER BAR: Tetap seperti gambar, tidak diubah
+                <h2 className="rounded-lg bg-gradient-to-r from-slate-300 via-cyan-200 to-blue-300 px-6 py-3 text-2xl leading-tight font-bold text-cyan-700 shadow-lg">
                     Barcode Scanner
                 </h2>
             }
         >
             <Head title="Scan" />
 
-            <div className="py-12">
-                <div className="max-w-4xl mx-auto sm:px-6 lg:px-8">
-                    <div className="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                        <div className="p-6">
-                            {/* Manual Barcode Input */}
-                            <div className="mb-8">
-                                <h3 className="text-lg font-medium text-gray-900 mb-4">
-                                    Enter Barcode Manually
-                                </h3>
+            {/* SOFT GRADIENT BACKGROUND */}
+            <div>
+                <div className="mx-auto max-w-4xl sm:px-6 lg:px-8">
+                    {/* CARD CONTAINER */}
+                    <div className="overflow-hidden border border-blue-100 bg-white/90 shadow-xl sm:rounded-2xl">
+                        <div className="p-8">
+                            {/* MANUAL BARCODE INPUT */}
+                            <div className="mb-10">
+                                <h3 className="mb-5 text-lg font-bold text-blue-700">Enter Barcode Manually</h3>
                                 <form onSubmit={handleBarcodeSubmit} className="space-y-4">
                                     <div>
-                                        <label htmlFor="barcode" className="block text-sm font-medium text-gray-700">
+                                        <label htmlFor="barcode" className="mb-1 block text-sm font-medium text-gray-700">
                                             Barcode
                                         </label>
-                                        <div className="mt-1 flex rounded-md shadow-sm">
+                                        <div className="mt-1 flex rounded-lg bg-gradient-to-r from-blue-50 via-cyan-50 to-blue-100 shadow-sm">
                                             <input
                                                 type="text"
                                                 id="barcode"
-                                                className="flex-1 form-input"
+                                                className="flex-1 rounded-l-lg border-none bg-transparent px-4 py-2 text-gray-800 placeholder-gray-400 focus:ring-0"
                                                 placeholder="Enter or scan barcode"
                                                 value={data.barcode}
                                                 onChange={(e) => setData('barcode', e.target.value)}
@@ -199,92 +160,164 @@ export default function ScanIndex({ locations }: ScanPageProps) {
                                             <button
                                                 type="submit"
                                                 disabled={scanning || !data.barcode}
-                                                className="ml-3 btn btn-primary"
+                                                className="flex items-center gap-1 rounded-r-lg bg-gradient-to-r from-cyan-400 to-blue-400 px-4 py-2 font-semibold text-white transition hover:brightness-110"
                                             >
-                                                {scanning ? (
-                                                    <div className="spinner mr-2" />
-                                                ) : (
-                                                    <QrCodeIcon className="w-4 h-4 mr-2" />
-                                                )}
+                                                <QrCodeIcon className="h-5 w-5" />
                                                 {scanning ? 'Scanning...' : 'Scan'}
                                             </button>
                                         </div>
-                                        {errors.barcode && (
-                                            <div className="text-red-600 text-sm mt-1">{errors.barcode}</div>
-                                        )}
+                                        {errors.barcode && <div className="mt-1 text-sm text-red-600">{errors.barcode}</div>}
                                     </div>
                                 </form>
                             </div>
 
-                            {/* Camera Scanner */}
-                            <div className="mb-8">
-                            <h3 className="text-lg font-medium text-gray-900 mb-4">
-                                Camera Scanner
-                            </h3>
-                            <div className="flex space-x-4 mb-4">
-                                <button onClick={startCamera} className="btn btn-secondary text-black">
-                                <CameraIcon className="w-4 h-4 mr-2 text-black" />
-                                Start Camera
-                                </button>
-                                <button onClick={() => { codeReader.reset(); setScanning(false); }} className="btn btn-secondary text-black">
-                                Stop Camera
-                                </button>
-                            </div>
-                            {/* video now visible when `scanning` is true */}
-                            {scanning && (
-                                <video
-                                ref={videoRef}
-                                className="w-full max-w-md border rounded-lg"
-                                playsInline
-                                muted
-                                autoPlay
-                                />
-                            )}
+                            {/* CAMERA SCANNER */}
+                            <div className="mb-10">
+                                <h3 className="mb-5 text-lg font-bold text-blue-700">Camera Scanner</h3>
+                                <div className="mb-4 flex space-x-4">
+                                    <button
+                                        onClick={startCamera}
+                                        className="flex items-center gap-1 rounded-lg bg-gradient-to-r from-green-300 to-cyan-300 px-4 py-2 font-semibold text-gray-800 shadow transition hover:brightness-110"
+                                    >
+                                        <CameraIcon className="h-5 w-5" />
+                                        Start Camera
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            codeReader.reset();
+                                            setScanning(false);
+                                        }}
+                                        className="rounded-lg bg-gradient-to-r from-red-200 to-orange-200 px-4 py-2 font-semibold text-gray-800 shadow transition hover:brightness-110"
+                                    >
+                                        Stop Camera
+                                    </button>
+                                </div>
+                                {scanning && (
+                                    <video
+                                        ref={videoRef}
+                                        className="w-full max-w-md rounded-xl border-2 border-cyan-200 shadow-lg"
+                                        playsInline
+                                        muted
+                                        autoPlay
+                                    />
+                                )}
                             </div>
 
-                            {/* Scan Result */}
-                            {scanResult && (
-                                <div className="mb-8">
-                                    {scanResult.success ? (
-                                        <div className="bg-green-50 border border-green-200 rounded-md p-4">
-                                            <h4 className="text-lg font-medium text-green-800 mb-2">
-                                                Product Found
-                                            </h4>
-                                            {selectedProduct && (
-                                                <div className="space-y-2">
-                                                    <p><strong>Name:</strong> {selectedProduct.name}</p>
-                                                    <p><strong>SKU:</strong> {selectedProduct.sku}</p>
-                                                    <p><strong>Unit:</strong> {selectedProduct.unit}</p>
-                                                    <p><strong>Current Stock:</strong> {selectedProduct.total_stock || 0}</p>
-                                                </div>
+                            {/* ---------- MODAL UNTUK MENAMPILKAN HASIL SCAN ---------- */}
+                            {modalOpen && scanResult && (
+                                <div className="bg-opacity-50 fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+                                    <div className="mx-4 w-full max-w-lg rounded-lg bg-white shadow-lg">
+                                        <div className="flex items-center justify-between border-b px-4 py-2">
+                                            <h2 className="text-xl font-semibold">
+                                                {scanResult.success ? 'Produk Ditemukan' : 'Produk Tidak Ditemukan'}
+                                            </h2>
+                                            <button
+                                                onClick={() => {
+                                                    setModalOpen(false);
+                                                    setScanResult(null);
+                                                }}
+                                                className="text-gray-500 hover:text-gray-800"
+                                            >
+                                                <XMarkIcon className="h-6 w-6" />
+                                            </button>
+                                        </div>
+                                        <div className="p-4">
+                                            {!scanResult.success ? (
+                                                <p className="text-red-600">{scanResult.message}</p>
+                                            ) : (
+                                                <>
+                                                    <div className="mb-4 space-y-1 text-gray-700">
+                                                        <p>
+                                                            <strong>Nama Produk:</strong> {scanResult.product.name}
+                                                        </p>
+                                                        <p>
+                                                            <strong>Kode Barcode:</strong> {scanResult.product.barcode}
+                                                        </p>
+                                                        <p>
+                                                            <strong>SKU:</strong> {scanResult.product.sku}
+                                                        </p>
+                                                        <p>
+                                                            <strong>Harga:</strong> Rp {scanResult.product.price}
+                                                        </p>
+                                                        <p>
+                                                            <strong>Kategori:</strong> {scanResult.product.category}
+                                                        </p>
+                                                        <p>
+                                                            <strong>Deskripsi:</strong> {scanResult.product.description}
+                                                        </p>
+                                                        <p>
+                                                            <strong>Satuan:</strong> {scanResult.product.unit}
+                                                        </p>
+                                                        <p>
+                                                            <strong>Stok Saat Ini:</strong> {totalStock(scanResult.product || 0)}
+                                                        </p>
+                                                    </div>
+                                                    <div>
+                                                        <h3 className="mb-2 font-semibold">Detail Stok di Lokasi:</h3>
+                                                        {scanResult.product.stock_items.length ? (
+                                                            <ul className="max-h-48 space-y-2 overflow-y-auto">
+                                                                {scanResult.product.stock_items.map((si: any) => (
+                                                                    <li key={si.id} className="rounded-md border bg-gray-50 p-2">
+                                                                        <p>
+                                                                            <strong>Lokasi:</strong> {si.location.name} ({si.location.code})
+                                                                        </p>
+                                                                        <p>
+                                                                            <strong>Gudang:</strong> {si.location.warehouse.name}
+                                                                        </p>
+                                                                        <p>
+                                                                            <strong>Jumlah:</strong> {si.quantity}
+                                                                        </p>
+                                                                        <p>
+                                                                            <strong>Harga Modal:</strong> Rp {si.unit_cost}
+                                                                        </p>
+                                                                    </li>
+                                                                ))}
+                                                            </ul>
+                                                        ) : (
+                                                            <p className="text-gray-600">Tidak ada data stok untuk produk ini.</p>
+                                                        )}
+                                                    </div>
+                                                </>
                                             )}
                                         </div>
-                                    ) : (
-                                        <div className="bg-red-50 border border-red-200 rounded-md p-4">
-                                            <h4 className="text-lg font-medium text-red-800 mb-2">
-                                                Product Not Found
-                                            </h4>
-                                            <p className="text-red-700">{scanResult.message}</p>
+                                        <div className="flex justify-end border-t px-4 py-2">
+                                            <button
+                                                onClick={() => setModalOpen(false)}
+                                                className="rounded-md bg-gray-200 px-4 py-2 transition hover:bg-gray-300"
+                                            >
+                                                Tutup
+                                            </button>
                                         </div>
-                                    )}
+                                    </div>
                                 </div>
                             )}
 
-                            {/* Quick Transaction */}
+                            {/* QUICK TRANSACTION */}
                             {selectedProduct && (
-                                <div className="bg-gray-50 rounded-lg p-6">
-                                    <h3 className="text-lg font-medium text-gray-900 mb-4">
-                                        Quick Transaction
-                                    </h3>
-                                    <form onSubmit={handleTransaction} className="space-y-4">
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="rounded-xl border border-blue-100 bg-blue-50/60 p-6 shadow">
+                                    <h3 className="mb-4 text-lg font-bold text-blue-700">Quick Transaction</h3>
+                                    <form
+                                        onSubmit={(e) => {
+                                            e.preventDefault();
+                                            setData('product_id', selectedProduct.id);
+                                            post('/scan/transaction', {
+                                                onSuccess: () => {
+                                                    reset();
+                                                    setSelectedProduct(null);
+                                                    setScanResult(null);
+                                                },
+                                            });
+                                        }}
+                                        className="space-y-4"
+                                    >
+                                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                                             <div>
                                                 <label htmlFor="location_id" className="block text-sm font-medium text-gray-700">
                                                     Location
                                                 </label>
                                                 <select
                                                     id="location_id"
-                                                    className="mt-1 form-select w-full"
+                                                    className="form-select mt-1 w-full rounded-md border-blue-200"
                                                     value={data.location_id}
                                                     onChange={(e) => setData('location_id', e.target.value)}
                                                     required
@@ -296,26 +329,22 @@ export default function ScanIndex({ locations }: ScanPageProps) {
                                                         </option>
                                                     ))}
                                                 </select>
-                                                {errors.location_id && (
-                                                    <div className="text-red-600 text-sm mt-1">{errors.location_id}</div>
-                                                )}
+                                                {errors.location_id && <div className="mt-1 text-sm text-red-600">{errors.location_id}</div>}
                                             </div>
-
                                             <div>
                                                 <label htmlFor="type" className="block text-sm font-medium text-gray-700">
                                                     Transaction Type
                                                 </label>
                                                 <select
                                                     id="type"
-                                                    className="mt-1 form-select w-full"
+                                                    className="form-select mt-1 w-full rounded-md border-blue-200"
                                                     value={data.type}
-                                                    onChange={(e) => setData('type', e.target.value as 'in' | 'out')}
+                                                    onChange={(e) => setData('type', e.target.value)}
                                                 >
                                                     <option value="in">Stock In</option>
                                                     <option value="out">Stock Out</option>
                                                 </select>
                                             </div>
-
                                             <div>
                                                 <label htmlFor="quantity" className="block text-sm font-medium text-gray-700">
                                                     Quantity
@@ -324,16 +353,13 @@ export default function ScanIndex({ locations }: ScanPageProps) {
                                                     type="number"
                                                     id="quantity"
                                                     min="1"
-                                                    className="mt-1 form-input w-full"
+                                                    className="form-input mt-1 w-full rounded-md border-blue-200"
                                                     value={data.quantity}
                                                     onChange={(e) => setData('quantity', parseInt(e.target.value))}
                                                     required
                                                 />
-                                                {errors.quantity && (
-                                                    <div className="text-red-600 text-sm mt-1">{errors.quantity}</div>
-                                                )}
+                                                {errors.quantity && <div className="mt-1 text-sm text-red-600">{errors.quantity}</div>}
                                             </div>
-
                                             <div>
                                                 <label htmlFor="notes" className="block text-sm font-medium text-gray-700">
                                                     Notes (Optional)
@@ -341,18 +367,17 @@ export default function ScanIndex({ locations }: ScanPageProps) {
                                                 <input
                                                     type="text"
                                                     id="notes"
-                                                    className="mt-1 form-input w-full"
+                                                    className="form-input mt-1 w-full rounded-md border-blue-200"
                                                     value={data.notes}
                                                     onChange={(e) => setData('notes', e.target.value)}
                                                 />
                                             </div>
                                         </div>
-
-                                        <div className="flex space-x-4">
+                                        <div className="mt-2 flex space-x-4">
                                             <button
                                                 type="submit"
                                                 disabled={processing}
-                                                className="btn btn-primary"
+                                                className="rounded-md bg-gradient-to-r from-cyan-500 to-blue-500 px-4 py-2 font-semibold text-white shadow transition hover:brightness-110"
                                             >
                                                 {processing ? 'Processing...' : 'Submit Transaction'}
                                             </button>
@@ -363,7 +388,7 @@ export default function ScanIndex({ locations }: ScanPageProps) {
                                                     setSelectedProduct(null);
                                                     setScanResult(null);
                                                 }}
-                                                className="btn btn-secondary"
+                                                className="rounded-md bg-gradient-to-r from-gray-200 to-gray-100 px-4 py-2 font-semibold text-gray-700 shadow transition hover:bg-gray-300"
                                             >
                                                 Reset
                                             </button>

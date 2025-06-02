@@ -4,24 +4,15 @@ import { Dialog, Transition } from '@headlessui/react';
 import { Head, Link, router, useForm } from '@inertiajs/react';
 import React, { Fragment, useState } from 'react';
 
-interface UsersIndexProps extends PageProps {
-    users: {
-        data: User[];
-        links: { url: string | null; label: string; active: boolean }[];
-    };
-    roles: Role[];
-    filters: { search?: string; role?: string };
-}
-
-export default function UsersIndex({ users, roles, filters }: UsersIndexProps) {
+export default function UsersIndex({ users, roles, filters }) {
     const [search, setSearch] = useState(filters.search || '');
     const [roleFilter, setRoleFilter] = useState(filters.role || '');
 
     const [isCreateOpen, setIsCreateOpen] = useState(false);
     const [isEditOpen, setIsEditOpen] = useState(false);
-    const [editingUser, setEditingUser] = useState<User | null>(null);
+    const [editingUser, setEditingUser] = useState(null);
 
-    const createForm = useForm<{ name: string; email: string; password: string; password_confirmation: string; phone: string; roles: string[] }>({
+    const createForm = useForm({
         name: '',
         email: '',
         password: '',
@@ -30,16 +21,16 @@ export default function UsersIndex({ users, roles, filters }: UsersIndexProps) {
         roles: [],
     });
 
-    const editForm = useForm<{
-        id: number;
-        name: string;
-        email: string;
-        password: string;
-        password_confirmation: string;
-        phone: string;
-        is_active: boolean;
-        roles: string[];
-    }>({ id: 0, name: '', email: '', password: '', password_confirmation: '', phone: '', is_active: true, roles: [] });
+    const editForm = useForm({
+        id: 0,
+        name: '',
+        email: '',
+        password: '',
+        password_confirmation: '',
+        phone: '',
+        is_active: true,
+        roles: [],
+    });
 
     const openCreate = () => setIsCreateOpen(true);
     const closeCreate = () => {
@@ -47,7 +38,7 @@ export default function UsersIndex({ users, roles, filters }: UsersIndexProps) {
         setIsCreateOpen(false);
     };
 
-    const openEdit = (user: User) => {
+    const openEdit = (user) => {
         setEditingUser(user);
         editForm.setData({
             id: user.id,
@@ -68,33 +59,22 @@ export default function UsersIndex({ users, roles, filters }: UsersIndexProps) {
         setEditingUser(null);
     };
 
-    const handleCreate = (e: React.FormEvent) => {
+    const handleCreate = (e) => {
         e.preventDefault();
         createForm.post('/users', { onSuccess: closeCreate });
     };
 
-    const handleEdit = (e: React.FormEvent) => {
+    const handleEdit = (e) => {
         e.preventDefault();
-        
-        // Use editForm.put() instead of router.post()
-        editForm.put(`/users/${editForm.data.id}`, { 
-            onSuccess: () => {
-                closeEdit();
-                // Optional: Add success message
-            },
-            onError: (errors) => {
-                console.log('Edit errors:', errors);
-                // Errors will be automatically set on editForm.errors
-            }
-        });
+        editForm.put(`/users/${editForm.data.id}`, { onSuccess: closeEdit });
     };
 
-    const handleDelete = (user: User) => {
+    const handleDelete = (user) => {
         if (!confirm('Are you sure you want to delete this user?')) return;
         router.delete(`/users/${user.id}`, { preserveScroll: true });
     };
 
-    const handleFilter = (e: React.FormEvent) => {
+    const handleFilter = (e) => {
         e.preventDefault();
         const params = new URLSearchParams();
         if (search) params.append('search', search);
@@ -102,280 +82,281 @@ export default function UsersIndex({ users, roles, filters }: UsersIndexProps) {
         window.location.href = `/users?${params.toString()}`;
     };
 
-    const debugFormData = () => {
-        console.log('Edit form data:', editForm.data);
-        console.log('Form errors:', editForm.errors);
-        console.log('Form processing:', editForm.processing);
-    };
-
     return (
-        <AuthenticatedLayout header={<h2 className="text-xl font-semibold text-gray-800">User Management</h2>}>
+        <AuthenticatedLayout
+            header={
+                // BAR USER MANAGEMENT: Tidak diubah, tetap seperti gambar
+                <h2 className="font-bold text-2xl text-cyan-700 leading-tight bg-gradient-to-r from-slate-300 via-cyan-200 to-blue-300 px-6 py-3 rounded-lg shadow-lg">
+                    User Management
+                </h2>
+            }
+        >
             <Head title="Users" />
-            <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-                <div className="mb-4 flex items-center justify-between px-4 py-4 bg-white shadow sm:rounded-xl">
-                    <form onSubmit={handleFilter} className="flex space-x-2">
-                        <input
-                            type="text"
-                            placeholder="Search..."
-                            value={search}
-                            onChange={(e) => setSearch(e.target.value)}
-                            className="form-input px-4 py-2 border-gray-300 rounded-md shadow-sm focus:border-blue-500 border-1 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
-                        />
-                        <select value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)} className="form-select appearance-none bg-white border-1 border-gray-300 text-black px-4 py-2 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 focus:ring-opacity-50">
-                            <option value="">All Roles</option>
-                            {roles.map((r) => (
-                                <option key={r.id} value={r.name}>
-                                    {r.name}
-                                </option>
-                            ))}
-                        </select>
-                        <button type="submit" className="btn btn-primary bg-green-500 text-white px-4 py-2 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 focus:ring-opacity-50 hover:scale-105 transition-transform duration-200">
-                            Filter
-                        </button>
-                    </form>
-                    <button onClick={openCreate} className="btn btn-secondary bg-blue-500 text-white px-4 py-2 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 focus:ring-opacity-50 hover:scale-105 transition-transform duration-200">
-                        Create User
-                    </button>
-                </div>
 
-                <div className="overflow-hidden bg-white shadow sm:rounded-lg">
-                    <table className="min-w-full divide-y divide-gray-200">
-                        <thead className="bg-gray-50">
-                            <tr>
-                                {['Name', 'Email', 'Roles', 'Status', 'Actions'].map((label) => (
-                                    <th key={label} className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase">
-                                        {label}
-                                    </th>
+            {/* SOFT PASTEL GRADIENT BACKGROUND */}
+            <div            >
+                <div className="mx-auto max-w-7xl px-4 py-2 sm:px-6 lg:px-8">
+
+                    {/* FILTER BAR */}
+                    <div className="mb-4 flex flex-col md:flex-row items-center justify-between bg-white/90 px-4 py-4 shadow-lg sm:rounded-xl border border-blue-100">
+                        <form onSubmit={handleFilter} className="flex flex-wrap gap-2 items-center">
+                            <input
+                                type="text"
+                                placeholder="Search..."
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                                className="rounded-md border border-gray-300 px-4 py-2 shadow-sm focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition"
+                            />
+                            <select
+                                value={roleFilter}
+                                onChange={(e) => setRoleFilter(e.target.value)}
+                                className="rounded-md border border-gray-300 px-4 py-2 shadow-sm focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition"
+                            >
+                                <option value="">All Roles</option>
+                                {roles.map((r) => (
+                                    <option key={r.id} value={r.name}>
+                                        {r.name}
+                                    </option>
                                 ))}
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-200 bg-white">
-                            {users.data.map((user) => (
-                                <tr key={user.id} className={user.is_active ? '' : 'opacity-50'}>
-                                    <td className="px-6 py-4 whitespace-nowrap">{user.name}</td>
-                                    <td className="px-6 py-4 whitespace-nowrap">{user.email}</td>
-                                    <td className="px-6 py-4 whitespace-nowrap">{user.roles.map((r) => r.name).join(', ')}</td>
-                                    <td className="px-6 py-4 whitespace-nowrap">{user.is_active ? 'Active' : 'Inactive'}</td>
-                                    <td className="space-x-2 px-6 py-4 whitespace-nowrap">
-                                        <button onClick={() => openEdit(user)} className="btn btn-sm btn-secondary px-2 py-1  bg-amber-200 text-gray-800 border-1 border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 focus:ring-opacity-50 hover:scale-105 transition-transform duration-200">
-                                            Edit
-                                        </button>
-                                        <button onClick={() => handleDelete(user)} className="btn btn-sm btn-danger px-2 py-1 bg-red-500 text-white border-1 border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 focus:ring-opacity-50 hover:scale-105 transition-transform duration-200">
-                                            Delete
-                                        </button>
-                                    </td>
+                            </select>
+                            <button
+                                type="submit"
+                                className="rounded-md bg-gradient-to-r from-green-400 via-emerald-400 to-green-500 px-4 py-2 text-white font-semibold shadow-md hover:brightness-110 transition"
+                            >
+                                Filter
+                            </button>
+                        </form>
+                        <button
+                            onClick={openCreate}
+                            className="mt-2 md:mt-0 rounded-md bg-gradient-to-r from-blue-400 via-cyan-400 to-blue-500 px-4 py-2 text-white font-semibold shadow-md hover:brightness-110 transition"
+                        >
+                            Create User
+                        </button>
+                    </div>
+
+                    {/* TABLE */}
+                    <div className="overflow-x-auto bg-white/95 shadow-xl sm:rounded-lg border border-blue-50">
+                        <table className="min-w-full divide-y divide-blue-100">
+                            <thead className="bg-gradient-to-r from-blue-50 via-cyan-50 to-blue-100">
+                                <tr>
+                                    {['Name', 'Email', 'Roles', 'Status', 'Actions'].map((label) => (
+                                        <th
+                                            key={label}
+                                            className="px-6 py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider"
+                                        >
+                                            {label}
+                                        </th>
+                                    ))}
                                 </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
-
-                <div className="mt-4 flex justify-center space-x-1">
-                    {users.links.map((link, i) => (
-                        <Link
-                            key={i}
-                            href={link.url || '#'}
-                            className={`rounded border px-3 py-1 ${link.active ? 'bg-gray-300' : ''}`}
-                            dangerouslySetInnerHTML={{ __html: link.label }}
-                        />
-                    ))}
-                </div>
-
-                {/* Create Modal */}
-                <Transition appear show={isCreateOpen} as={Fragment}>
-                    <Dialog as="div" className="relative z-10" onClose={closeCreate}>
-                        <Transition.Child
-                            as={Fragment}
-                            enter="ease-out duration-300"
-                            enterFrom="opacity-0"
-                            enterTo="opacity-100"
-                            leave="ease-in duration-200"
-                            leaveFrom="opacity-100"
-                            leaveTo="opacity-0"
-                        >
-                            <div className="bg-opacity-25 fixed inset-0 bg-black/60" />
-                        </Transition.Child>
-                        <div className="fixed inset-0 overflow-y-auto">
-                            <div className="flex min-h-full items-center justify-center p-4 text-center">
-                                <Transition.Child
-                                    as={Fragment}
-                                    enter="ease-out duration-300"
-                                    enterFrom="opacity-0 scale-95"
-                                    enterTo="opacity-100 scale-100"
-                                    leave="ease-in duration-200"
-                                    leaveFrom="opacity-100 scale-100"
-                                    leaveTo="opacity-0 scale-95"
-                                >
-                                    <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-2xl bg-white p-6 text-left align-middle shadow-xl transition-all">
-                                        <Dialog.Title className="text-lg leading-6 font-medium text-gray-900">Create User</Dialog.Title>
-                                        <form onSubmit={handleCreate} className="mt-4 space-y-4">
-                                            <input
-                                                placeholder="Name"
-                                                value={createForm.data.name}
-                                                onChange={(e) => createForm.setData('name', e.target.value)}
-                                                className="form-input w-full"
-                                            />
-                                            {createForm.errors.name && <div className="text-red-600">{createForm.errors.name}</div>}
-                                            <input
-                                                placeholder="Email"
-                                                value={createForm.data.email}
-                                                onChange={(e) => createForm.setData('email', e.target.value)}
-                                                className="form-input w-full"
-                                            />
-                                            {createForm.errors.email && <div className="text-red-600">{createForm.errors.email}</div>}
-                                            <input
-                                                type="password"
-                                                placeholder="Password"
-                                                value={createForm.data.password}
-                                                onChange={(e) => createForm.setData('password', e.target.value)}
-                                                className="form-input w-full"
-                                            />
-                                            {createForm.errors.password && <div className="text-red-600">{createForm.errors.password}</div>}
-                                            <input
-                                                type="password"
-                                                placeholder="Confirm Password"
-                                                value={createForm.data.password_confirmation}
-                                                onChange={(e) => createForm.setData('password_confirmation', e.target.value)}
-                                                className="form-input w-full"
-                                            />
-                                            <input
-                                                placeholder="Phone"
-                                                value={createForm.data.phone}
-                                                onChange={(e) => createForm.setData('phone', e.target.value)}
-                                                className="form-input w-full"
-                                            />
-                                            <select
-                                                multiple
-                                                value={createForm.data.roles}
-                                                onChange={(e) =>
-                                                    createForm.setData(
-                                                        'roles',
-                                                        Array.from(e.target.selectedOptions).map((opt) => opt.value),
-                                                    )
-                                                }
-                                                className="form-select w-full"
+                            </thead>
+                            <tbody className="divide-y divide-blue-50 bg-white/80">
+                                {users.data.map((user) => (
+                                    <tr
+                                        key={user.id}
+                                        className={user.is_active ? 'hover:bg-blue-50/60 transition' : 'opacity-60 bg-gray-50'}
+                                    >
+                                        <td className="px-6 py-4 whitespace-nowrap font-medium text-gray-900">{user.name}</td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-gray-700">{user.email}</td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-gray-700">{user.roles.map((r) => r.name).join(', ')}</td>
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                                            <span className={`px-3 py-1 rounded-full text-xs font-semibold shadow ${user.is_active ? 'bg-green-100 text-green-700 border border-green-200' : 'bg-red-100 text-red-700 border border-red-200'}`}>
+                                                {user.is_active ? 'Active' : 'Inactive'}
+                                            </span>
+                                        </td>
+                                        <td className="space-x-2 px-6 py-4 whitespace-nowrap">
+                                            <button
+                                                onClick={() => openEdit(user)}
+                                                className="rounded-md bg-yellow-200 text-gray-800 px-3 py-1 font-semibold shadow hover:bg-yellow-300 transition"
                                             >
-                                                {roles.map((r) => (
-                                                    <option key={r.id} value={r.name}>
-                                                        {r.name}
-                                                    </option>
-                                                ))}
-                                            </select>
-                                            <div className="mt-4 flex justify-end space-x-2">
-                                                <button type="button" onClick={closeCreate} className="btn btn-secondary">
-                                                    Cancel
-                                                </button>
-                                                <button type="submit" className="btn btn-primary" disabled={createForm.processing}>
-                                                    Create
-                                                </button>
-                                            </div>
-                                        </form>
-                                    </Dialog.Panel>
-                                </Transition.Child>
-                            </div>
-                        </div>
-                    </Dialog>
-                </Transition>
-
-                {/* Edit Modal (similar to Create) */}
-                <Transition appear show={isEditOpen} as={Fragment}>
-                    <Dialog as="div" className="relative z-10" onClose={closeEdit}>
-                        <Transition.Child
-                            as={Fragment}
-                            enter="ease-out duration-300"
-                            enterFrom="opacity-0"
-                            enterTo="opacity-100"
-                            leave="ease-in duration-200"
-                            leaveFrom="opacity-100"
-                            leaveTo="opacity-0"
-                        >
-                            <div className="bg-opacity-25 fixed inset-0 bg-black/60" />
-                        </Transition.Child>
-                        <div className="fixed inset-0 overflow-y-auto">
-                            <div className="flex min-h-full items-center justify-center p-4 text-center">
-                                <Transition.Child
-                                    as={Fragment}
-                                    enter="ease-out duration-300"
-                                    enterFrom="opacity-0 scale-95"
-                                    enterTo="opacity-100 scale-100"
-                                    leave="ease-in duration-200"
-                                    leaveFrom="opacity-100 scale-100"
-                                    leaveTo="opacity-0 scale-95"
-                                >
-                                    <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-2xl bg-white p-6 text-left align-middle shadow-xl transition-all">
-                                        <Dialog.Title className="text-lg leading-6 font-medium text-gray-900">Edit User</Dialog.Title>
-                                        <form onSubmit={handleEdit} className="mt-4 space-y-4">
-                                            {/* Add a debug button (remove in production) */}
-                                            <button type="button" onClick={debugFormData} className="btn btn-sm btn-info">
-                                                Debug Form
+                                                Edit
                                             </button>
-                                            
-                                            {/* Show general errors */}
-                                            {Object.keys(editForm.errors).length > 0 && (
-                                                <div className="bg-red-50 border border-red-200 rounded p-3">
-                                                    <h4 className="text-red-800 font-medium">Please fix the following errors:</h4>
-                                                    <ul className="text-red-600 text-sm mt-1">
-                                                        {Object.entries(editForm.errors).map(([field, message]) => (
-                                                            <li key={field}>• {field}: {message}</li>
-                                                        ))}
-                                                    </ul>
-                                                </div>
-                                            )}
-                                            
-                                            <input
-                                                placeholder="Name"
-                                                value={editForm.data.name}
-                                                onChange={(e) => editForm.setData('name', e.target.value)}
-                                                className={`form-input w-full ${editForm.errors.name ? 'border-red-500' : ''}`}
-                                                required
-                                            />
-                                            {editForm.errors.name && <div className="text-red-600 text-sm">{editForm.errors.name}</div>}
-                                            
-                                            <input
-                                                type="email"
-                                                placeholder="Email"
-                                                value={editForm.data.email}
-                                                onChange={(e) => editForm.setData('email', e.target.value)}
-                                                className={`form-input w-full ${editForm.errors.email ? 'border-red-500' : ''}`}
-                                                required
-                                            />
-                                            {editForm.errors.email && <div className="text-red-600 text-sm">{editForm.errors.email}</div>}
-                                            
-                                            <input
-                                                type="password"
-                                                placeholder="New Password (leave blank to keep current)"
-                                                value={editForm.data.password}
-                                                onChange={(e) => editForm.setData('password', e.target.value)}
-                                                className={`form-input w-full ${editForm.errors.password ? 'border-red-500' : ''}`}
-                                            />
-                                            {editForm.errors.password && <div className="text-red-600 text-sm">{editForm.errors.password}</div>}
-                                            
-                                            <input
-                                                type="password"
-                                                placeholder="Confirm Password"
-                                                value={editForm.data.password_confirmation}
-                                                onChange={(e) => editForm.setData('password_confirmation', e.target.value)}
-                                                className="form-input w-full"
-                                            />
-                                            
-                                            <input
-                                                placeholder="Phone"
-                                                value={editForm.data.phone}
-                                                onChange={(e) => editForm.setData('phone', e.target.value)}
-                                                className="form-input w-full"
-                                            />
-                                            
-                                            <label className="flex items-center space-x-2">
+                                            <button
+                                                onClick={() => handleDelete(user)}
+                                                className="rounded-md bg-red-500 text-white px-3 py-1 font-semibold shadow hover:bg-red-600 transition"
+                                            >
+                                                Delete
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    {/* PAGINATION */}
+                    <div className="mt-4 flex justify-center space-x-1">
+                        {users.links.map((link, i) => (
+                            <Link
+                                key={i}
+                                href={link.url || '#'}
+                                className={`rounded border px-3 py-1 ${link.active ? 'bg-blue-100 text-blue-700 font-bold' : 'bg-white text-gray-700'} hover:bg-blue-50 transition`}
+                                dangerouslySetInnerHTML={{ __html: link.label }}
+                            />
+                        ))}
+                    </div>
+
+                    {/* CREATE MODAL */}
+                    <Transition appear show={isCreateOpen} as={Fragment}>
+                        <Dialog as="div" className="relative z-10" onClose={closeCreate}>
+                            <Transition.Child
+                                as={Fragment}
+                                enter="ease-out duration-300"
+                                enterFrom="opacity-0"
+                                enterTo="opacity-100"
+                                leave="ease-in duration-200"
+                                leaveFrom="opacity-100"
+                                leaveTo="opacity-0"
+                            >
+                                <div className="bg-opacity-25 fixed inset-0 bg-black/60" />
+                            </Transition.Child>
+                            <div className="fixed inset-0 overflow-y-auto">
+                                <div className="flex min-h-full items-center justify-center p-4 text-center">
+                                    <Transition.Child
+                                        as={Fragment}
+                                        enter="ease-out duration-300"
+                                        enterFrom="opacity-0 scale-95"
+                                        enterTo="opacity-100 scale-100"
+                                        leave="ease-in duration-200"
+                                        leaveFrom="opacity-100 scale-100"
+                                        leaveTo="opacity-0 scale-95"
+                                    >
+                                        <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-2xl bg-white/95 p-6 text-left align-middle shadow-xl transition-all border border-blue-100">
+                                            <Dialog.Title className="text-lg leading-6 font-bold text-blue-700">Create User</Dialog.Title>
+                                            <form onSubmit={handleCreate} className="mt-4 space-y-4">
                                                 <input
-                                                    type="checkbox"
-                                                    checked={editForm.data.is_active}
-                                                    onChange={(e) => editForm.setData('is_active', e.target.checked)}
+                                                    placeholder="Name"
+                                                    value={createForm.data.name}
+                                                    onChange={(e) => createForm.setData('name', e.target.value)}
+                                                    className="form-input w-full rounded-md border-blue-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
                                                 />
-                                                <span>Active</span>
-                                            </label>
-                                            
-                                            <div>
-                                                <label className="block text-sm font-medium text-gray-700 mb-2">Roles:</label>
+                                                <input
+                                                    placeholder="Email"
+                                                    value={createForm.data.email}
+                                                    onChange={(e) => createForm.setData('email', e.target.value)}
+                                                    className="form-input w-full rounded-md border-blue-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                                                />
+                                                <input
+                                                    type="password"
+                                                    placeholder="Password"
+                                                    value={createForm.data.password}
+                                                    onChange={(e) => createForm.setData('password', e.target.value)}
+                                                    className="form-input w-full rounded-md border-blue-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                                                />
+                                                <input
+                                                    type="password"
+                                                    placeholder="Confirm Password"
+                                                    value={createForm.data.password_confirmation}
+                                                    onChange={(e) => createForm.setData('password_confirmation', e.target.value)}
+                                                    className="form-input w-full rounded-md border-blue-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                                                />
+                                                <input
+                                                    placeholder="Phone"
+                                                    value={createForm.data.phone}
+                                                    onChange={(e) => createForm.setData('phone', e.target.value)}
+                                                    className="form-input w-full rounded-md border-blue-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                                                />
+                                                <select
+                                                    multiple
+                                                    value={createForm.data.roles}
+                                                    onChange={(e) =>
+                                                        createForm.setData(
+                                                            'roles',
+                                                            Array.from(e.target.selectedOptions).map((opt) => opt.value),
+                                                        )
+                                                    }
+                                                    className="form-select w-full rounded-md border-blue-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                                                >
+                                                    {roles.map((r) => (
+                                                        <option key={r.id} value={r.name}>
+                                                            {r.name}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                                <div className="mt-4 flex justify-end space-x-2">
+                                                    <button type="button" onClick={closeCreate} className="rounded-md bg-gray-200 px-4 py-2 text-gray-700 font-semibold hover:bg-gray-300 transition">
+                                                        Cancel
+                                                    </button>
+                                                    <button type="submit" className="rounded-md bg-blue-500 px-4 py-2 text-white font-semibold hover:bg-blue-600 transition" disabled={createForm.processing}>
+                                                        Create
+                                                    </button>
+                                                </div>
+                                            </form>
+                                        </Dialog.Panel>
+                                    </Transition.Child>
+                                </div>
+                            </div>
+                        </Dialog>
+                    </Transition>
+
+                    {/* EDIT MODAL */}
+                    <Transition appear show={isEditOpen} as={Fragment}>
+                        <Dialog as="div" className="relative z-10" onClose={closeEdit}>
+                            <Transition.Child
+                                as={Fragment}
+                                enter="ease-out duration-300"
+                                enterFrom="opacity-0"
+                                enterTo="opacity-100"
+                                leave="ease-in duration-200"
+                                leaveFrom="opacity-100"
+                                leaveTo="opacity-0"
+                            >
+                                <div className="bg-opacity-25 fixed inset-0 bg-black/60" />
+                            </Transition.Child>
+                            <div className="fixed inset-0 overflow-y-auto">
+                                <div className="flex min-h-full items-center justify-center p-4 text-center">
+                                    <Transition.Child
+                                        as={Fragment}
+                                        enter="ease-out duration-300"
+                                        enterFrom="opacity-0 scale-95"
+                                        enterTo="opacity-100 scale-100"
+                                        leave="ease-in duration-200"
+                                        leaveFrom="opacity-100 scale-100"
+                                        leaveTo="opacity-0 scale-95"
+                                    >
+                                        <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-2xl bg-white/95 p-6 text-left align-middle shadow-xl transition-all border border-blue-100">
+                                            <Dialog.Title className="text-lg leading-6 font-bold text-blue-700">Edit User</Dialog.Title>
+                                            <form onSubmit={handleEdit} className="mt-4 space-y-4">
+                                                <input
+                                                    placeholder="Name"
+                                                    value={editForm.data.name}
+                                                    onChange={(e) => editForm.setData('name', e.target.value)}
+                                                    className="form-input w-full rounded-md border-blue-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                                                />
+                                                <input
+                                                    type="email"
+                                                    placeholder="Email"
+                                                    value={editForm.data.email}
+                                                    onChange={(e) => editForm.setData('email', e.target.value)}
+                                                    className="form-input w-full rounded-md border-blue-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                                                />
+                                                <input
+                                                    type="password"
+                                                    placeholder="New Password (leave blank to keep current)"
+                                                    value={editForm.data.password}
+                                                    onChange={(e) => editForm.setData('password', e.target.value)}
+                                                    className="form-input w-full rounded-md border-blue-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                                                />
+                                                <input
+                                                    type="password"
+                                                    placeholder="Confirm Password"
+                                                    value={editForm.data.password_confirmation}
+                                                    onChange={(e) => editForm.setData('password_confirmation', e.target.value)}
+                                                    className="form-input w-full rounded-md border-blue-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                                                />
+                                                <input
+                                                    placeholder="Phone"
+                                                    value={editForm.data.phone}
+                                                    onChange={(e) => editForm.setData('phone', e.target.value)}
+                                                    className="form-input w-full rounded-md border-blue-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                                                />
+                                                <label className="flex items-center space-x-2">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={editForm.data.is_active}
+                                                        onChange={(e) => editForm.setData('is_active', e.target.checked)}
+                                                    />
+                                                    <span>Active</span>
+                                                </label>
                                                 <select
                                                     multiple
                                                     value={editForm.data.roles}
@@ -385,8 +366,7 @@ export default function UsersIndex({ users, roles, filters }: UsersIndexProps) {
                                                             Array.from(e.target.selectedOptions).map((opt) => opt.value),
                                                         )
                                                     }
-                                                    className="form-select w-full h-32"
-                                                    size={roles.length}
+                                                    className="form-select w-full rounded-md border-blue-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
                                                 >
                                                     {roles.map((r) => (
                                                         <option key={r.id} value={r.name}>
@@ -394,33 +374,22 @@ export default function UsersIndex({ users, roles, filters }: UsersIndexProps) {
                                                         </option>
                                                     ))}
                                                 </select>
-                                                <p className="text-xs text-gray-500 mt-1">Hold Ctrl/Cmd to select multiple roles</p>
-                                            </div>
-                                            
-                                            <div className="mt-4 flex justify-end space-x-2">
-                                                <button 
-                                                    type="button" 
-                                                    onClick={closeEdit} 
-                                                    className="btn btn-secondary"
-                                                    disabled={editForm.processing}
-                                                >
-                                                    Cancel
-                                                </button>
-                                                <button 
-                                                    type="submit" 
-                                                    className="btn btn-primary" 
-                                                    disabled={editForm.processing}
-                                                >
-                                                    {editForm.processing ? 'Saving...' : 'Save'}
-                                                </button>
-                                            </div>
-                                        </form>
-                                    </Dialog.Panel>
-                                </Transition.Child>
+                                                <div className="mt-4 flex justify-end space-x-2">
+                                                    <button type="button" onClick={closeEdit} className="rounded-md bg-gray-200 px-4 py-2 text-gray-700 font-semibold hover:bg-gray-300 transition">
+                                                        Cancel
+                                                    </button>
+                                                    <button type="submit" className="rounded-md bg-blue-500 px-4 py-2 text-white font-semibold hover:bg-blue-600 transition" disabled={editForm.processing}>
+                                                        Save
+                                                    </button>
+                                                </div>
+                                            </form>
+                                        </Dialog.Panel>
+                                    </Transition.Child>
+                                </div>
                             </div>
-                        </div>
-                    </Dialog>
-                </Transition>
+                        </Dialog>
+                    </Transition>
+                </div>
             </div>
         </AuthenticatedLayout>
     );

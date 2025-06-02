@@ -40,6 +40,16 @@ class Product extends Model
                 $product->barcode = Str::uuid();
             }
         });
+
+        static::created(function ($product) {
+            $product->stockItems()->create([
+                'location_id'  => 1,       // change this if you want a different default
+                'quantity'     => 0,
+                'unit_cost'    => 0.00,
+                'expiry_date'  => null,
+                'batch_number' => null,
+            ]);
+        });
     }
 
     public function stockItems()

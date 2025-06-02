@@ -1,36 +1,9 @@
 import AuthenticatedLayout from '@/layouts/AuthenticatedLayout';
-import { Head, Link, router, useForm } from '@inertiajs/react';
-import React, { useState, useMemo, Fragment } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
+import { Head, Link, router, useForm } from '@inertiajs/react';
+import React, { Fragment, useMemo, useState } from 'react';
+import { StockItem, Warehouse, Location } from '@/types';
 
-interface Warehouse {
-    id: number;
-    name: string;
-}
-interface Product {
-    id: number;
-    name: string;
-    sku: string;
-    unit: string;
-}
-interface Location {
-    id: number;
-    name: string;
-    warehouse: Warehouse;
-}
-interface StockItem {
-    id: number;
-    product: Product;
-    location: Location;
-    quantity: number;
-    unit_cost: string | number | null;
-    expiry_date: string | null;
-    batch_number: string | null;
-    is_expired: boolean;
-    is_near_expiry: boolean;
-    product_id: number;
-    location_id: number;
-}
 interface PaginationLink {
     url: string | null;
     label: string;
@@ -41,7 +14,14 @@ interface StockIndexProps {
         data: StockItem[];
         links: PaginationLink[];
     };
-    warehouses: Warehouse[];
+    warehouses: {
+        data: Warehouse[];
+        links: PaginationLink[];
+    };
+    locations: {
+        data: Location[];
+        links: PaginationLink[];
+    };
     filters: {
         search?: string;
         warehouse_id?: string;
@@ -56,37 +36,17 @@ function formatDate(dateStr: string | null) {
     return date.toLocaleDateString('id-ID', { year: 'numeric', month: 'short', day: 'numeric' });
 }
 
-export default function StockIndex({
-    stock_items,
-    warehouses,
-    filters,
-}: StockIndexProps) {
+export default function StockIndex({ stock_items, warehouses, locations, filters }: StockIndexProps) {
     const [search, setSearch] = useState(filters.search || '');
     const [warehouseId, setWarehouseId] = useState(filters.warehouse_id || '');
     const [lowStock, setLowStock] = useState(!!filters.low_stock);
     const [expired, setExpired] = useState(!!filters.expired);
 
-    // Ambil semua lokasi unik dari stock_items
-    const allLocations = useMemo(() => {
-        const locMap: { [id: number]: Location } = {};
-        stock_items.data.forEach(item => {
-            if (item.location && !locMap[item.location.id]) {
-                locMap[item.location.id] = item.location;
-            }
-        });
-        return Object.values(locMap);
-    }, [stock_items.data]);
+    const allWarehouses = warehouses.data || [];
+    const allLocations = allWarehouses.flatMap(w => w.locations || []);
 
-    // Ambil semua warehouse unik dari lokasi
-    const allWarehouses = useMemo(() => {
-        const whMap: { [id: number]: Warehouse } = {};
-        allLocations.forEach(loc => {
-            if (loc.warehouse && !whMap[loc.warehouse.id]) {
-                whMap[loc.warehouse.id] = loc.warehouse;
-            }
-        });
-        return Object.values(whMap);
-    }, [allLocations]);
+    console.log('allWarehouses', allWarehouses);
+    console.log('allLocations', allLocations);
 
     // Per-row adjustment modal
     const [adjustWarehouseId, setAdjustWarehouseId] = useState<number>(0);
@@ -153,14 +113,12 @@ export default function StockIndex({
         return stock_items.data.filter(
             (item: StockItem) =>
                 item.product.name.toLowerCase().includes(bulkSearch.toLowerCase()) ||
-                item.product.sku.toLowerCase().includes(bulkSearch.toLowerCase())
+                item.product.sku.toLowerCase().includes(bulkSearch.toLowerCase()),
         );
     }, [bulkSearch, stock_items.data]);
 
     const handleCheck = (id: number, checked: boolean) => {
-        setSelectedIds((prev) =>
-            checked ? [...prev, id] : prev.filter((sid) => sid !== id)
-        );
+        setSelectedIds((prev) => (checked ? [...prev, id] : prev.filter((sid) => sid !== id)));
     };
 
     const handleCheckAll = (checked: boolean) => {
@@ -180,16 +138,20 @@ export default function StockIndex({
         }
         setBulkProcessing(true);
         for (const id of selectedIds) {
-            const item = stock_items.data.find(i => i.id === id);
+            const item = stock_items.data.find((i) => i.id === id);
             if (!item) continue;
-            await router.post('/stock/adjustment', {
-                product_id: item.product.id,
-                location_id: item.location.id,
-                type: bulkType,
-                quantity: Number(bulkQuantity),
-                notes: bulkNotes,
-                reference_number: bulkReference,
-            }, { preserveScroll: true, preserveState: true });
+            await router.post(
+                '/stock/adjustment',
+                {
+                    product_id: item.product.id,
+                    location_id: item.location.id,
+                    type: bulkType,
+                    quantity: Number(bulkQuantity),
+                    notes: bulkNotes,
+                    reference_number: bulkReference,
+                },
+                { preserveScroll: true, preserveState: true },
+            );
         }
         setBulkProcessing(false);
         setShowBulk(false);
@@ -224,53 +186,56 @@ export default function StockIndex({
     };
 
     return (
-        <AuthenticatedLayout header={<h2 className="text-xl font-semibold text-gray-800">Manajemen Stok</h2>}>
-            <Head title="Stock" />
-            <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+        <AuthenticatedLayout
+            header={
+                <h2 className="font-bold text-2xl text-cyan-700 leading-tight bg-gradient-to-r from-slate-300 via-cyan-200 to-blue-300 px-6 py-3 rounded-lg shadow-lg">
+                    Stock Management
+                </h2>
+            }
+        >
+            <Head title="Stocks" />
+            <div className="mx-auto max-w-7xl px-4 py-2 sm:px-6 lg:px-8">
                 {/* Filter Bar */}
-                <div className="mb-4 flex items-center justify-between px-4 py-4 bg-white shadow sm:rounded-xl">
-                    <form onSubmit={handleFilter} className="flex flex-wrap gap-2 items-center">
+                <div className="mb-4 flex items-center justify-between bg-white px-4 py-4 shadow sm:rounded-xl">
+                    <form onSubmit={handleFilter} className="flex flex-wrap items-center gap-2">
                         <input
                             type="text"
                             placeholder="Cari Produk/SKU..."
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
-                            className="form-input px-4 py-2 border border-gray-300 rounded-md shadow-sm"
+                            className="form-input rounded-md border border-gray-300 px-4 py-2 shadow-sm"
                         />
                         <select
                             value={warehouseId}
                             onChange={(e) => setWarehouseId(e.target.value)}
-                            className="form-select bg-white border border-gray-300 px-4 py-2 rounded-md shadow-sm"
+                            className="form-select rounded-md border border-gray-300 bg-white px-4 py-2 shadow-sm"
                         >
                             <option value="">Semua Gudang</option>
-                            {warehouses.map((w: Warehouse) => (
-                                <option key={w.id} value={w.id}>{w.name}</option>
+                            {warehouses?.data?.map((w: Warehouse) => (
+                                <option key={w.id} value={w.id}>
+                                    {w.name}
+                                </option>
                             ))}
                         </select>
                         <label className="flex items-center space-x-1">
-                            <input
-                                type="checkbox"
-                                checked={lowStock}
-                                onChange={(e) => setLowStock(e.target.checked)}
-                            />
+                            <input type="checkbox" checked={lowStock} onChange={(e) => setLowStock(e.target.checked)} />
                             <span>Stok Rendah</span>
                         </label>
                         <label className="flex items-center space-x-1">
-                            <input
-                                type="checkbox"
-                                checked={expired}
-                                onChange={(e) => setExpired(e.target.checked)}
-                            />
+                            <input type="checkbox" checked={expired} onChange={(e) => setExpired(e.target.checked)} />
                             <span>Kadaluarsa</span>
                         </label>
-                        <button type="submit" className="btn btn-primary bg-green-500 text-white px-4 py-2 rounded-md shadow-sm hover:scale-105 transition-transform duration-200">
-                            Filter
+                        <button
+                            type="submit"
+                            className="btn btn-primary rounded-md bg-green-500 px-4 py-2 text-white shadow-sm transition-transform duration-200 hover:scale-105"
+                        >
+                            Cari
                         </button>
                     </form>
                     <button
                         type="button"
                         onClick={() => setShowBulk(true)}
-                        className="btn btn-secondary bg-blue-500 text-white px-4 py-2 rounded-md shadow-sm hover:scale-105 transition-transform duration-200"
+                        className="btn btn-secondary rounded-md bg-blue-500 px-4 py-2 text-white shadow-sm transition-transform duration-200 hover:scale-105"
                     >
                         Penyesuaian Massal
                     </button>
@@ -296,7 +261,9 @@ export default function StockIndex({
                         <tbody className="divide-y divide-gray-200 bg-white">
                             {stock_items.data.length === 0 && (
                                 <tr>
-                                    <td colSpan={11} className="px-6 py-4 text-center text-gray-500">Tidak ada stok barang yang ditemukan.</td>
+                                    <td colSpan={11} className="px-6 py-4 text-center text-gray-500">
+                                        Tidak ada stok barang yang ditemukan.
+                                    </td>
                                 </tr>
                             )}
                             {stock_items.data.map((item: StockItem) => (
@@ -309,28 +276,25 @@ export default function StockIndex({
                                     <td className="px-6 py-4 whitespace-nowrap">{item.quantity}</td>
                                     <td className="px-6 py-4 whitespace-nowrap">{item.product.unit}</td>
                                     <td className="px-6 py-4 whitespace-nowrap">
-                                        {item.unit_cost !== null ? Number(item.unit_cost).toLocaleString('id-ID', { style: 'currency', currency: 'IDR' }) : '-'}
+                                        {item.unit_cost !== null
+                                            ? Number(item.unit_cost).toLocaleString('id-ID', { style: 'currency', currency: 'IDR' })
+                                            : '-'}
                                     </td>
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                        {formatDate(item.expiry_date)}
-                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap">{formatDate(item.expiry_date)}</td>
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         {item.is_expired ? (
-                                            <span className="px-2 py-1 rounded bg-red-500 text-white text-xs">Kadaluarsa</span>
+                                            <span className="rounded bg-red-500 px-2 py-1 text-xs text-white">Kadaluarsa</span>
                                         ) : item.is_near_expiry ? (
-                                            <span className="px-2 py-1 rounded bg-yellow-500 text-white text-xs">Hampir Kadaluwarsa</span>
+                                            <span className="rounded bg-yellow-500 px-2 py-1 text-xs text-white">Hampir Kadaluwarsa</span>
                                         ) : (
-                                            <span className="px-2 py-1 rounded bg-green-100 text-green-800 text-xs">OK</span>
+                                            <span className="rounded bg-green-100 px-2 py-1 text-xs text-green-800">OK</span>
                                         )}
                                     </td>
-                                    <td className="space-x-2 px-6 py-4 whitespace-nowrap text-center">
+                                    <td className="space-x-2 px-6 py-4 text-center whitespace-nowrap">
                                         <button onClick={() => openAdjust(item)} className="btn btn-sm rounded-md bg-indigo-200 px-2 py-1">
                                             Sesuaikan
                                         </button>
-                                        <button
-                                            onClick={() => openView(item)}
-                                            className="btn btn-sm rounded-md bg-amber-200 px-2 py-1"
-                                        >
+                                        <button onClick={() => openView(item)} className="btn btn-sm rounded-md bg-amber-200 px-2 py-1">
                                             Lihat
                                         </button>
                                         <button onClick={() => handleDelete(item)} className="btn btn-sm rounded-md bg-red-500 px-2 py-1 text-white">
@@ -353,142 +317,146 @@ export default function StockIndex({
                         />
                     ))}
                 </div>
+                
                 {/* BULK ADJUSTMENT MODAL*/}
                 <Transition appear show={showBulk} as={Fragment}>
-    <Dialog as="div" className="relative z-50" onClose={() => setShowBulk(false)}>
-        <Transition.Child
-            as={Fragment}
-            enter="ease-out duration-300"
-            enterFrom="opacity-0"
-            enterTo="opacity-100"
-            leave="ease-in duration-200"
-            leaveFrom="opacity-100"
-            leaveTo="opacity-0"
-        >
-            <div className="fixed inset-0 bg-black/60 bg-opacity-40" />
-        </Transition.Child>
-        <div className="fixed inset-0 flex items-center justify-center p-4">
-            <Transition.Child
-                as={Fragment}
-                enter="ease-out duration-300"
-                enterFrom="opacity-0 scale-95"
-                enterTo="opacity-100 scale-100"
-                leave="ease-in duration-200"
-                leaveFrom="opacity-100 scale-100"
-                leaveTo="opacity-0 scale-95"
-            >
-                <Dialog.Panel className="w-full max-w-4xl bg-white rounded-lg shadow-xl flex overflow-hidden">
-                    {/* LEFT: Data Picker */}
-                    <div className="w-1/2 border-r p-6 bg-gray-50 flex flex-col">
-                        <h3 className="text-lg font-semibold mb-2">Pilih Data Stock</h3>
-                        <input
-                            type="text"
-                            className="form-input w-full mb-2 border border-gray-300 p-2 rounded"
-                            placeholder="Cari nama/SKU..."
-                            value={bulkSearch}
-                            onChange={e => setBulkSearch(e.target.value)}
-                        />
-                        <div className="flex items-center mb-2">
-                            <input
-                                type="checkbox"
-                                checked={selectedIds.length === filteredBulkStock.length && filteredBulkStock.length > 0}
-                                onChange={e => handleCheckAll(e.target.checked)}
-                                className="mr-2"
-                            />
-                            <span className="text-sm">Pilih Semua</span>
+                    <Dialog as="div" className="relative z-50" onClose={() => setShowBulk(false)}>
+                        <Transition.Child
+                            as={Fragment}
+                            enter="ease-out duration-300"
+                            enterFrom="opacity-0"
+                            enterTo="opacity-100"
+                            leave="ease-in duration-200"
+                            leaveFrom="opacity-100"
+                            leaveTo="opacity-0"
+                        >
+                            <div className="bg-opacity-40 fixed inset-0 bg-black/60" />
+                        </Transition.Child>
+                        <div className="fixed inset-0 flex items-center justify-center p-4">
+                            <Transition.Child
+                                as={Fragment}
+                                enter="ease-out duration-300"
+                                enterFrom="opacity-0 scale-95"
+                                enterTo="opacity-100 scale-100"
+                                leave="ease-in duration-200"
+                                leaveFrom="opacity-100 scale-100"
+                                leaveTo="opacity-0 scale-95"
+                            >
+                                <Dialog.Panel className="flex w-full max-w-4xl overflow-hidden rounded-lg bg-white shadow-xl">
+                                    {/* LEFT: Data Picker */}
+                                    <div className="flex w-1/2 flex-col border-r bg-gray-50 p-6">
+                                        <h3 className="mb-2 text-lg font-semibold">Pilih Data Stock</h3>
+                                        <input
+                                            type="text"
+                                            className="form-input mb-2 w-full rounded border border-gray-300 p-2"
+                                            placeholder="Cari nama/SKU..."
+                                            value={bulkSearch}
+                                            onChange={(e) => setBulkSearch(e.target.value)}
+                                        />
+                                        <div className="mb-2 flex items-center">
+                                            <input
+                                                type="checkbox"
+                                                checked={selectedIds.length === filteredBulkStock.length && filteredBulkStock.length > 0}
+                                                onChange={(e) => handleCheckAll(e.target.checked)}
+                                                className="mr-2"
+                                            />
+                                            <span className="text-sm">Pilih Semua</span>
+                                        </div>
+                                        <div className="flex-1 overflow-y-scroll rounded border bg-white max-h-80">
+                                            {filteredBulkStock.length === 0 && <div className="py-8 text-center text-gray-400">Tidak ada data</div>}
+                                            {filteredBulkStock.map((item: StockItem) => (
+                                                <label
+                                                    key={item.id}
+                                                    className="flex cursor-pointer items-center border-b px-2 py-1 hover:bg-gray-100"
+                                                >
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={selectedIds.includes(item.id)}
+                                                        onChange={(e) => handleCheck(item.id, e.target.checked)}
+                                                        className="mr-2"
+                                                    />
+                                                    <span className="flex-1 text-sm">
+                                                        <b>{item.product.name}</b> ({item.product.sku}) | {item.location.warehouse?.name} /{' '}
+                                                        {item.location.name}
+                                                    </span>
+                                                    <span className="ml-2 text-xs text-gray-500">Qty: {item.quantity}</span>
+                                                </label>
+                                            ))}
+                                        </div>
+                                    </div>
+                                    {/* RIGHT: Bulk Adjust Form */}
+                                    <div className="flex w-1/2 flex-col p-6">
+                                        <h3 className="mb-4 text-lg font-semibold">Bulk Stock Adjustment</h3>
+                                        <form onSubmit={handleBulkAdjust} className="flex flex-1 flex-col gap-3">
+                                            <div>
+                                                <label className="mb-1 block text-sm font-medium">Jenis Penyesuaian</label>
+                                                <select
+                                                    value={bulkType}
+                                                    onChange={(e) => setBulkType(e.target.value as any)}
+                                                    className="w-full rounded border border-gray-300 p-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                                >
+                                                    <option value="in">Masuk (+)</option>
+                                                    <option value="out">Keluar (-)</option>
+                                                    <option value="adjustment">Penyesuaian</option>
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label className="mb-1 block text-sm font-medium">Jumlah Penyesuaian</label>
+                                                <input
+                                                    type="number"
+                                                    value={bulkQuantity}
+                                                    min={1}
+                                                    onChange={(e) => setBulkQuantity(e.target.value)}
+                                                    className="w-full rounded border border-gray-300 p-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                                    required
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="mb-1 block text-sm font-medium">No Referensi (opsional)</label>
+                                                <input
+                                                    type="text"
+                                                    value={bulkReference}
+                                                    onChange={(e) => setBulkReference(e.target.value)}
+                                                    className="w-full rounded border border-gray-300 p-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="mb-1 block text-sm font-medium">Catatan (opsional)</label>
+                                                <textarea
+                                                    value={bulkNotes}
+                                                    onChange={(e) => setBulkNotes(e.target.value)}
+                                                    className="w-full rounded border border-gray-300 p-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                                />
+                                            </div>
+                                            {bulkError && <div className="mt-2 text-sm text-red-500">{bulkError}</div>}
+                                            <div className="flex-1" />
+                                            <div className="mt-4 flex justify-end gap-2">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setShowBulk(false)}
+                                                    className="btn rounded bg-gray-200 px-4 py-2"
+                                                >
+                                                    Batal
+                                                </button>
+                                                <button
+                                                    type="submit"
+                                                    disabled={bulkProcessing || selectedIds.length === 0}
+                                                    className="btn rounded bg-blue-600 px-4 py-2 text-white"
+                                                >
+                                                    {bulkProcessing ? 'Memproses...' : `Adjust ${selectedIds.length} Data`}
+                                                </button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </Dialog.Panel>
+                            </Transition.Child>
                         </div>
-                        <div className="flex-1 overflow-y-auto border rounded bg-white">
-                            {filteredBulkStock.length === 0 && (
-                                <div className="text-gray-400 text-center py-8">Tidak ada data</div>
-                            )}
-                            {filteredBulkStock.map((item: StockItem) => (
-                                <label key={item.id} className="flex items-center px-2 py-1 border-b cursor-pointer hover:bg-gray-100">
-                                    <input
-                                        type="checkbox"
-                                        checked={selectedIds.includes(item.id)}
-                                        onChange={e => handleCheck(item.id, e.target.checked)}
-                                        className="mr-2"
-                                    />
-                                    <span className="flex-1 text-sm">
-                                        <b>{item.product.name}</b> ({item.product.sku}) | {item.location.warehouse?.name} / {item.location.name}
-                                    </span>
-                                    <span className="text-xs text-gray-500 ml-2">Qty: {item.quantity}</span>
-                                </label>
-                            ))}
-                        </div>
-                    </div>
-                    {/* RIGHT: Bulk Adjust Form */}
-                    <div className="w-1/2 p-6 flex flex-col">
-                        <h3 className="text-lg font-semibold mb-4">Bulk Stock Adjustment</h3>
-                        <form onSubmit={handleBulkAdjust} className="flex flex-col flex-1 gap-3">
-                            <div>
-                                <label className="block text-sm font-medium mb-1">Jenis Penyesuaian</label>
-                                <select
-                                    value={bulkType}
-                                    onChange={e => setBulkType(e.target.value as any)}
-                                    className="border border-gray-300 p-2 rounded w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                >
-                                    <option value="in">In (+)</option>
-                                    <option value="out">Out (-)</option>
-                                    <option value="adjustment">Adjustment</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium mb-1">Jumlah Penyesuaian</label>
-                                <input
-                                    type="number"
-                                    value={bulkQuantity}
-                                    min={1}
-                                    onChange={e => setBulkQuantity(e.target.value)}
-                                    className="border border-gray-300 p-2 rounded w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    required
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium mb-1">No Referensi (opsional)</label>
-                                <input
-                                    type="text"
-                                    value={bulkReference}
-                                    onChange={e => setBulkReference(e.target.value)}
-                                    className="border border-gray-300 p-2 rounded w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium mb-1">Catatan (opsional)</label>
-                                <textarea
-                                    value={bulkNotes}
-                                    onChange={e => setBulkNotes(e.target.value)}
-                                    className="border border-gray-300 p-2 rounded w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                />
-                            </div>
-                            {bulkError && (
-                                <div className="mt-2 text-red-500 text-sm">{bulkError}</div>
-                            )}
-                            <div className="flex-1" />
-                            <div className="flex justify-end gap-2 mt-4">
-                                <button type="button" onClick={() => setShowBulk(false)} className="btn bg-gray-200 px-4 py-2 rounded">
-                                    Batal
-                                </button>
-                                <button
-                                    type="submit"
-                                    disabled={bulkProcessing || selectedIds.length === 0}
-                                    className="btn bg-blue-600 text-white px-4 py-2 rounded"
-                                >
-                                    {bulkProcessing ? 'Memproses...' : `Adjust ${selectedIds.length} Data`}
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </Dialog.Panel>
-            </Transition.Child>
-        </div>
-    </Dialog>
-</Transition>
-
+                    </Dialog>
+                </Transition>
 
                 {/* Per-row Adjustment Modal */}
                 <Transition appear show={isAdjustOpen} as={Fragment}>
-                    <Dialog as="div" className="relative z-10" onClose={closeAdjust}>
+                    <Dialog as="div" className="relative z-50" onClose={closeAdjust}>
                         <Transition.Child
                             as={Fragment}
                             enter="ease-out duration-300"
@@ -512,132 +480,135 @@ export default function StockIndex({
                                     leaveTo="opacity-0 scale-95"
                                 >
                                     <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-2xl bg-white p-6 text-left align-middle shadow-xl transition-all">
-                                        <Dialog.Title className="text-lg font-medium text-gray-900 mb-4">Sesuaikan Stok</Dialog.Title>
+                                        <Dialog.Title className="mb-4 text-lg font-medium text-gray-900">Sesuaikan Stok</Dialog.Title>
                                         <form
-  onSubmit={e => {
-    e.preventDefault();
-    adjustForm.post('/stock/adjustment', {
-      onSuccess: () => {
-        closeAdjust();
-        window.location.reload(); // reload data agar tabel berubah
-      },
-    });
-  }}
-  className="space-y-4"
->
-  {/* Produk */}
-  <div>
-    <label className="block text-sm font-semibold mb-1 text-gray-700">Produk</label>
-    <input
-      type="text"
-      readOnly
-      value={currentItem?.product?.name || ''}
-      className="border border-gray-200 p-2 rounded w-full bg-gray-100 text-gray-700"
-    />
-  </div>
-  {/* Gudang */}
-  <div>
-    <label className="block text-sm font-semibold mb-1 text-gray-700">Gudang</label>
-    <select
-      value={adjustWarehouseId}
-      onChange={e => {
-        setAdjustWarehouseId(Number(e.target.value));
-        adjustForm.setData('location_id', 0);
-      }}
-      className="border border-gray-300 p-2 rounded w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
-      required
-    >
-      <option value="">Pilih Gudang</option>
-      {allWarehouses.map(w => (
-        <option key={w.id} value={w.id}>{w.name}</option>
-      ))}
-    </select>
-  </div>
-  {/* Lokasi */}
-  <div>
-    <label className="block text-sm font-semibold mb-1 text-gray-700">Lokasi</label>
-    <select
-      value={adjustForm.data.location_id}
-      onChange={e => adjustForm.setData('location_id', Number(e.target.value))}
-      className="border border-gray-300 p-2 rounded w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
-      required
-    >
-      <option value="">Pilih Lokasi</option>
-      {allLocations
-        .filter(loc => loc.warehouse && loc.warehouse.id === adjustWarehouseId)
-        .map(loc => (
-          <option key={loc.id} value={loc.id}>{loc.name}</option>
-        ))}
-    </select>
-  </div>
-  {/* Jenis Penyesuaian */}
-  <div>
-    <label className="block text-sm font-semibold mb-1 text-gray-700">Jenis Penyesuaian</label>
-    <select
-      value={adjustForm.data.type}
-      onChange={e => adjustForm.setData('type', e.target.value as any)}
-      className="border border-gray-300 p-2 rounded w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
-    >
-      <option value="in">Masuk</option>
-      <option value="out">Keluar</option>
-      <option value="adjustment">Sesuaikan</option>
-    </select>
-  </div>
-  {/* Jumlah */}
-  <div>
-    <label className="block text-sm font-semibold mb-1 text-gray-700">Jumlah</label>
-    <input
-      type="number"
-      placeholder="Quantity"
-      value={adjustForm.data.quantity}
-      onChange={e => adjustForm.setData('quantity', parseInt(e.target.value))}
-      className="border border-gray-300 p-2 rounded w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
-      required
-    />
-    {adjustForm.errors.quantity && (
-      <div className="text-red-500 text-xs mt-1">{adjustForm.errors.quantity}</div>
-    )}
-  </div>
-  {/* No Referensi */}
-  <div>
-    <label className="block text-sm font-semibold mb-1 text-gray-700">No Referensi (opsional)</label>
-    <input
-      placeholder="No Referensi"
-      value={adjustForm.data.reference_number}
-      onChange={e => adjustForm.setData('reference_number', e.target.value)}
-      className="border border-gray-300 p-2 rounded w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
-    />
-  </div>
-  {/* Catatan */}
-  <div>
-    <label className="block text-sm font-semibold mb-1 text-gray-700">Catatan (opsional)</label>
-    <input
-      placeholder="Catatan"
-      value={adjustForm.data.notes}
-      onChange={e => adjustForm.setData('notes', e.target.value)}
-      className="border border-gray-300 p-2 rounded w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
-    />
-  </div>
-  {/* Tombol */}
-  <div className="mt-6 flex justify-end gap-2">
-    <button
-      type="button"
-      onClick={closeAdjust}
-      className="bg-gray-200 px-4 py-2 rounded hover:bg-gray-300"
-      disabled={adjustForm.processing}
-    >
-      Batal
-    </button>
-    <button
-      type="submit"
-      className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-      disabled={adjustForm.processing}
-    >
-      Simpan
-    </button>
-  </div>
-</form>
-
+                                            onSubmit={(e) => {
+                                                e.preventDefault();
+                                                adjustForm.post('/stock/adjustment', {
+                                                    onSuccess: () => {
+                                                        closeAdjust();
+                                                        window.location.reload(); // reload data agar tabel berubah
+                                                    },
+                                                });
+                                            }}
+                                            className="space-y-4"
+                                        >
+                                            {/* Produk */}
+                                            <div>
+                                                <label className="mb-1 block text-sm font-semibold text-gray-700">Produk</label>
+                                                <input
+                                                    type="text"
+                                                    readOnly
+                                                    value={currentItem?.product?.name || ''}
+                                                    className="w-full rounded border border-gray-200 bg-gray-100 p-2 text-gray-700"
+                                                />
+                                            </div>
+                                            {/* Gudang */}
+                                            <div>
+                                                <label className="mb-1 block text-sm font-semibold text-gray-700">Gudang</label>
+                                                <select
+                                                    value={adjustWarehouseId}
+                                                    onChange={(e) => {
+                                                        setAdjustWarehouseId(Number(e.target.value));
+                                                        adjustForm.setData('location_id', 0);
+                                                    }}
+                                                    className="w-full rounded border border-gray-300 p-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                                    required
+                                                >
+                                                    <option value="">Pilih Gudang</option>
+                                                    {allWarehouses.map((w) => (
+                                                        <option key={w.id} value={w.id}>
+                                                            {w.name}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                            {/* Lokasi */}
+                                            <div>
+                                                <label className="mb-1 block text-sm font-semibold text-gray-700">Lokasi</label>
+                                                <select
+                                                    value={adjustForm.data.location_id}
+                                                    onChange={(e) => adjustForm.setData('location_id', Number(e.target.value))}
+                                                    className="w-full rounded border border-gray-300 p-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                                    required
+                                                >
+                                                    <option value="">Pilih Lokasi</option>
+                                                    {allLocations
+                                                        .filter((loc) => loc.warehouse_id === adjustWarehouseId)
+                                                        .map((loc) => (
+                                                            <option key={loc.id} value={loc.id}>
+                                                                {loc.name}
+                                                            </option>
+                                                        ))}
+                                                </select>
+                                            </div>
+                                            {/* Jenis Penyesuaian */}
+                                            <div>
+                                                <label className="mb-1 block text-sm font-semibold text-gray-700">Jenis Penyesuaian</label>
+                                                <select
+                                                    value={adjustForm.data.type}
+                                                    onChange={(e) => adjustForm.setData('type', e.target.value as any)}
+                                                    className="w-full rounded border border-gray-300 p-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                                >
+                                                    <option value="in">Masuk</option>
+                                                    <option value="out">Keluar</option>
+                                                    <option value="adjustment">Sesuaikan</option>
+                                                </select>
+                                            </div>
+                                            {/* Jumlah */}
+                                            <div>
+                                                <label className="mb-1 block text-sm font-semibold text-gray-700">Jumlah</label>
+                                                <input
+                                                    type="number"
+                                                    placeholder="Quantity"
+                                                    value={adjustForm.data.quantity}
+                                                    onChange={(e) => adjustForm.setData('quantity', parseInt(e.target.value))}
+                                                    className="w-full rounded border border-gray-300 p-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                                    required
+                                                />
+                                                {adjustForm.errors.quantity && (
+                                                    <div className="mt-1 text-xs text-red-500">{adjustForm.errors.quantity}</div>
+                                                )}
+                                            </div>
+                                            {/* No Referensi */}
+                                            <div>
+                                                <label className="mb-1 block text-sm font-semibold text-gray-700">No Referensi (opsional)</label>
+                                                <input
+                                                    placeholder="No Referensi"
+                                                    value={adjustForm.data.reference_number}
+                                                    onChange={(e) => adjustForm.setData('reference_number', e.target.value)}
+                                                    className="w-full rounded border border-gray-300 p-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                                />
+                                            </div>
+                                            {/* Catatan */}
+                                            <div>
+                                                <label className="mb-1 block text-sm font-semibold text-gray-700">Catatan (opsional)</label>
+                                                <input
+                                                    placeholder="Catatan"
+                                                    value={adjustForm.data.notes}
+                                                    onChange={(e) => adjustForm.setData('notes', e.target.value)}
+                                                    className="w-full rounded border border-gray-300 p-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                                />
+                                            </div>
+                                            {/* Tombol */}
+                                            <div className="mt-6 flex justify-end gap-2">
+                                                <button
+                                                    type="button"
+                                                    onClick={closeAdjust}
+                                                    className="rounded bg-gray-200 px-4 py-2 hover:bg-gray-300"
+                                                    disabled={adjustForm.processing}
+                                                >
+                                                    Batal
+                                                </button>
+                                                <button
+                                                    type="submit"
+                                                    className="rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
+                                                    disabled={adjustForm.processing}
+                                                >
+                                                    Simpan
+                                                </button>
+                                            </div>
+                                        </form>
                                     </Dialog.Panel>
                                 </Transition.Child>
                             </div>
@@ -657,7 +628,7 @@ export default function StockIndex({
                             leaveFrom="opacity-100"
                             leaveTo="opacity-0"
                         >
-                            <div className="fixed inset-0 bg-black/60 bg-opacity-40" />
+                            <div className="bg-opacity-40 fixed inset-0 bg-black/60" />
                         </Transition.Child>
                         <div className="fixed inset-0 flex items-center justify-center p-4">
                             <Transition.Child
@@ -669,10 +640,8 @@ export default function StockIndex({
                                 leaveFrom="opacity-100 scale-100"
                                 leaveTo="opacity-0 scale-95"
                             >
-                                <Dialog.Panel className="w-full max-w-lg bg-white rounded-lg shadow-xl p-6">
-                                    <Dialog.Title className="text-lg font-semibold mb-4">
-                                        Detail Stock
-                                    </Dialog.Title>
+                                <Dialog.Panel className="w-full max-w-lg rounded-lg bg-white p-6 shadow-xl">
+                                    <Dialog.Title className="mb-4 text-lg font-semibold">Detail Stock</Dialog.Title>
                                     {viewItem && (
                                         <div className="space-y-3">
                                             <div>
@@ -719,21 +688,18 @@ export default function StockIndex({
                                                 <div className="text-xs text-gray-500">Status</div>
                                                 <div>
                                                     {viewItem.is_expired ? (
-                                                        <span className="px-2 py-1 rounded bg-red-500 text-white text-xs">Kadaluarsa</span>
+                                                        <span className="rounded bg-red-500 px-2 py-1 text-xs text-white">Kadaluarsa</span>
                                                     ) : viewItem.is_near_expiry ? (
-                                                        <span className="px-2 py-1 rounded bg-yellow-500 text-white text-xs">Hampir Kadaluarsa</span>
+                                                        <span className="rounded bg-yellow-500 px-2 py-1 text-xs text-white">Hampir Kadaluarsa</span>
                                                     ) : (
-                                                        <span className="px-2 py-1 rounded bg-green-100 text-green-800 text-xs">OK</span>
+                                                        <span className="rounded bg-green-100 px-2 py-1 text-xs text-green-800">OK</span>
                                                     )}
                                                 </div>
                                             </div>
                                         </div>
                                     )}
                                     <div className="mt-6 flex justify-end">
-                                        <button
-                                            onClick={closeView}
-                                            className="btn bg-gray-200 px-4 py-2 rounded"
-                                        >
+                                        <button onClick={closeView} className="btn rounded bg-gray-200 px-4 py-2">
                                             Tutup
                                         </button>
                                     </div>
