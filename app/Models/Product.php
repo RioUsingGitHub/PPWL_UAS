@@ -37,7 +37,8 @@ class Product extends Model
         
         static::creating(function ($product) {
             if (!$product->barcode) {
-                $product->barcode = Str::uuid();
+                $uuidNoDash = str_replace('-', '', (string) Str::uuid()); 
+                $product->barcode = substr($uuidNoDash, 0, 12); 
             }
         });
 
