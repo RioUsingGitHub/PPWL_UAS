@@ -28,9 +28,6 @@ export default function WarehouseIndex({ warehouses, locations, filters }: Wareh
     const warehouseList = warehouses.data || []
     const allLocations = warehouseList.flatMap(w => w.locations || [])
 
-    console.log('allWarehouses', warehouseList);
-    console.log('allLocations', allLocations);
-
     const createForm = useForm({
         name: '',
         code: '',

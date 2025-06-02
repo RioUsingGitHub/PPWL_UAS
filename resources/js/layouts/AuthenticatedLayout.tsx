@@ -42,49 +42,49 @@ export default function AuthenticatedLayout({ header, children }: Props) {
 
     const navigation = [
         {
-            name: 'Dashboard',
+            name: 'Beranda',
             href: '/dashboard',
             icon: HomeIcon,
             show: true,
             gradient: 'from-blue-500 to-cyan-400'
         },
         {
-            name: 'Products',
+            name: 'Produk',
             href: '/products',
             icon: CubeIcon,
             show: hasPermission('manage-products'),
             gradient: 'from-emerald-500 to-teal-400'
         },
         {
-            name: 'Stock',
+            name: 'Stok',
             href: '/stock',
             icon: ClipboardDocumentListIcon,
             show: hasPermission('manage-stock'),
             gradient: 'from-purple-500 to-indigo-400'
         },
         {
-            name: 'Warehouses',
+            name: 'Gudang',
             href: '/warehouses',
             icon: BuildingStorefrontIcon,
             show: hasPermission('manage-warehouses'),
             gradient: 'from-orange-500 to-red-400'
         },
         {
-            name: 'Scan',
+            name: 'Pindai',
             href: '/scan',
             icon: QrCodeIcon,
             show: hasPermission('scan-barcode'),
             gradient: 'from-pink-500 to-rose-400'
         },
         {
-            name: 'Users',
+            name: 'Pengguna',
             href: '/users',
             icon: UserGroupIcon,
             show: hasPermission('manage-users'),
             gradient: 'from-green-500 to-lime-400'
         },
         {
-            name: 'Audit Logs',
+            name: 'Daftar Audit',
             href: '/audit-logs',
             icon: ClipboardDocumentListIcon,
             show: hasPermission('view-audit-logs'),
