@@ -69,20 +69,6 @@ class ProductController extends Controller
             ->with('message', 'Product created successfully.');
     }
 
-    public function show(Product $product)
-    {
-        $product->load([
-            'stockItems.location.warehouse',
-            'movementHistories' => function ($query) {
-                $query->with(['location.warehouse', 'user'])->latest()->take(20);
-            }
-        ]);
-
-        return Inertia::render('Products/Show', [
-            'product' => $product,
-        ]);
-    }
-
     public function update(Request $request, Product $product)
     {
         $validated = $request->validate([
@@ -119,7 +105,7 @@ class ProductController extends Controller
 
         $product->delete();
 
-        return redirect()->route('products.index')
+        return back()
             ->with('message', 'Product deleted successfully.');
     }
 
