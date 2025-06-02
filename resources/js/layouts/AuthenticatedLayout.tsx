@@ -1,5 +1,5 @@
 import { useState, PropsWithChildren, ReactNode, useEffect } from 'react';
-import { Link, usePage } from '@inertiajs/react';
+import { Link, usePage, router } from '@inertiajs/react';
 import { User, SharedData } from '@/types';
 import { 
     HomeIcon, 
@@ -12,9 +12,12 @@ import {
     XMarkIcon,
     ChevronDownIcon,
     BellIcon,
-    MagnifyingGlassIcon
+    MagnifyingGlassIcon,
+    ArrowLeftEndOnRectangleIcon,
+    ArrowLeftStartOnRectangleIcon
 } from '@heroicons/react/24/outline';
 import { Toaster } from "@/components/ui/sonner"
+import Swal from 'sweetalert2';
 
 interface Props extends PropsWithChildren {
     header?: ReactNode;
@@ -92,6 +95,23 @@ export default function AuthenticatedLayout({ header, children }: Props) {
         },
     ].filter(item => item.show);
 
+    const logout = () => {
+        Swal.fire({
+            title: 'Apakah Anda yakin ingin keluar?',
+            text: 'Anda akan keluar dari akun Anda.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Ya, keluar',
+            cancelButtonText: 'Batal'
+        }).then((result) => {
+            if (result.isConfirmed) {
+            router.post('/logout', {}, { preserveScroll: true });
+            }
+        });
+    };
+
     const SidebarContent = ({ mobile = false }) => (
         <div className="flex flex-1 flex-col overflow-y-auto pt-5 pb-4">
             <div className="flex flex-shrink-0 items-center px-4 mb-8">
@@ -100,7 +120,7 @@ export default function AuthenticatedLayout({ header, children }: Props) {
                         <CubeIcon className="w-6 h-6 text-white" />
                     </div>
                     <div>
-                        <h1 className={`font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent ${mobile ? 'text-lg' : 'text-xl'}`}>
+                        <h1 className={font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent ${mobile ? 'text-lg' : 'text-xl'}}>
                             Inventory
                         </h1>
                         <p className="text-xs text-gray-500 font-medium">Management System</p>
@@ -116,7 +136,7 @@ export default function AuthenticatedLayout({ header, children }: Props) {
                             href={item.href}
                             className={`group relative flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-300 ease-out transform hover:scale-105 ${
                                 isActive 
-                                    ? `bg-gradient-to-r ${item.gradient} text-white shadow-lg shadow-blue-200/50` 
+                                    ? bg-gradient-to-r ${item.gradient} text-white shadow-lg shadow-blue-200/50 
                                     : 'text-gray-600 hover:bg-gradient-to-r hover:from-blue-50 hover:to-cyan-50 hover:text-blue-700 hover:shadow-md'
                             }`}
                         >
@@ -208,12 +228,18 @@ export default function AuthenticatedLayout({ header, children }: Props) {
                             <button className="p-2 rounded-xl text-gray-500 hover:text-blue-600 hover:bg-blue-50 transition-all duration-200">
                                 <BellIcon className="w-5 h-5" />
                             </button>
+                            {/* Logout Quick Access */}
+                            <button
+                                onClick={logout}
+                                className="p-2 rounded-xl text-gray-500 hover:text-blue-600 hover:bg-blue-50 transition-all duration-200">
+                                <ArrowLeftStartOnRectangleIcon className="w-5 h-5" />
+                            </button>
                         </div>
                     </div>
                 </div>
 
                 {/* Desktop top bar */}
-                <div className={`hidden md:flex h-16 flex-shrink-0 bg-white/80 backdrop-blur-xl border-b transition-all duration-300 ${
+                <div className={`z-2 sticky top-0 hidden md:flex h-16 flex-shrink-0 bg-white/80 backdrop-blur-xl border-b transition-all duration-300 ${
                     isScrolled ? 'border-gray-200 shadow-sm' : 'border-transparent'
                 }`}>
                     <div className="flex flex-1 justify-between px-6">
@@ -234,7 +260,6 @@ export default function AuthenticatedLayout({ header, children }: Props) {
                         </div>
                         
                         <div className="ml-4 flex items-center space-x-4">
-                            {/* Notifications */}
                             <button className="relative p-2 rounded-xl text-gray-500 hover:text-blue-600 hover:bg-blue-50 transition-all duration-200">
                                 <BellIcon className="w-5 h-5" />
                                 <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-pulse" />
