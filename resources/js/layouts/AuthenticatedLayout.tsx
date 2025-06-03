@@ -1,8 +1,8 @@
 import { useState, PropsWithChildren, ReactNode, useEffect } from 'react';
 import { Link, usePage, router } from '@inertiajs/react';
 import { User, SharedData } from '@/types';
-import { 
-    HomeIcon, 
+import {
+    HomeIcon,
     CubeIcon,
     BuildingStorefrontIcon,
     UserGroupIcon,
@@ -107,26 +107,32 @@ export default function AuthenticatedLayout({ header, children }: Props) {
             cancelButtonText: 'Batal'
         }).then((result) => {
             if (result.isConfirmed) {
-            router.post('/logout', {}, { preserveScroll: true });
+                router.post('/logout', {}, { preserveScroll: true });
             }
         });
     };
 
-    const SidebarContent = ({ mobile = false }) => (
+    const SidebarContent = ({ mobile = false, auth }) => (
         <div className="flex flex-1 flex-col overflow-y-auto pt-5 pb-4">
+            {/* Header */}
             <div className="flex flex-shrink-0 items-center px-4 mb-8">
                 <div className="flex items-center space-x-3">
                     <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-cyan-500 rounded-xl flex items-center justify-center shadow-lg">
                         <CubeIcon className="w-6 h-6 text-white" />
                     </div>
                     <div>
-                        <h1 className={font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent ${mobile ? 'text-lg' : 'text-xl'}}>
+                        <h1
+                            className={`font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent ${mobile ? 'text-lg' : 'text-xl'
+                                }`}
+                        >
                             Inventory
                         </h1>
                         <p className="text-xs text-gray-500 font-medium">Management System</p>
                     </div>
                 </div>
             </div>
+
+            {/* Navigation */}
             <nav className="mt-5 flex-1 space-y-2 px-3">
                 {navigation.map((item) => {
                     const isActive = window.location.pathname === item.href;
@@ -134,18 +140,23 @@ export default function AuthenticatedLayout({ header, children }: Props) {
                         <Link
                             key={item.name}
                             href={item.href}
-                            className={`group relative flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-300 ease-out transform hover:scale-105 ${
-                                isActive 
-                                    ? bg-gradient-to-r ${item.gradient} text-white shadow-lg shadow-blue-200/50 
+                            className={`group relative flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-300 ease-out transform hover:scale-105 ${isActive
+                                    ? `bg-gradient-to-r ${item.gradient} text-white shadow-lg shadow-blue-200/50`
                                     : 'text-gray-600 hover:bg-gradient-to-r hover:from-blue-50 hover:to-cyan-50 hover:text-blue-700 hover:shadow-md'
-                            }`}
+                                }`}
                         >
-                            <div className={`flex items-center justify-center w-8 h-8 rounded-lg mr-3 transition-all duration-300 ${
-                                isActive ? 'bg-white/20' : 'bg-gray-100 group-hover:bg-blue-100 group-hover:scale-110'
-                            }`}>
-                                <item.icon className={`w-5 h-5 transition-colors duration-300 ${
-                                    isActive ? 'text-white' : 'text-gray-500 group-hover:text-blue-600'
-                                }`} />
+                            <div
+                                className={`flex items-center justify-center w-8 h-8 rounded-lg mr-3 transition-all duration-300 ${isActive
+                                        ? 'bg-white/20'
+                                        : 'bg-gray-100 group-hover:bg-blue-100 group-hover:scale-110'
+                                    }`}
+                            >
+                                <item.icon
+                                    className={`w-5 h-5 transition-colors duration-300 ${isActive
+                                            ? 'text-white'
+                                            : 'text-gray-500 group-hover:text-blue-600'
+                                        }`}
+                                />
                             </div>
                             <span className="transition-all duration-300">{item.name}</span>
                             {isActive && (
@@ -155,18 +166,18 @@ export default function AuthenticatedLayout({ header, children }: Props) {
                     );
                 })}
             </nav>
-            
+
             {/* Sidebar Footer */}
             <div className="px-4 pt-4 border-t border-gray-200">
                 <div className="flex items-center space-x-3 p-3 rounded-xl bg-gradient-to-r from-blue-50 to-cyan-50 border border-blue-100">
                     <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-cyan-400 rounded-lg flex items-center justify-center">
                         <span className="text-xs font-bold text-white">
-                            {auth.user?.name?.charAt(0).toUpperCase()}
+                            {auth?.user?.name?.charAt(0).toUpperCase()}
                         </span>
                     </div>
                     <div className="flex-1 min-w-0">
                         <p className="text-sm font-semibold text-gray-800 truncate">
-                            {auth.user?.name}
+                            {auth?.user?.name}
                         </p>
                         <p className="text-xs text-gray-500 truncate">Online</p>
                     </div>
@@ -180,17 +191,15 @@ export default function AuthenticatedLayout({ header, children }: Props) {
         <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-cyan-50">
             {/* Mobile sidebar overlay */}
             <div
-                className={`fixed inset-0 z-50 md:hidden transition-opacity duration-300 ${
-                    sidebarOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
-                }`}
+                className={`fixed inset-0 z-50 md:hidden transition-opacity duration-300 ${sidebarOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
+                    }`}
             >
-                <div 
-                    className="fixed inset-0 bg-gray-900/50 backdrop-blur-sm" 
-                    onClick={() => setSidebarOpen(false)} 
+                <div
+                    className="fixed inset-0 bg-gray-900/50 backdrop-blur-sm"
+                    onClick={() => setSidebarOpen(false)}
                 />
-                <div className={`relative flex w-full max-w-xs h-full flex-1 flex-col bg-white/95 backdrop-blur-xl shadow-2xl transition-transform duration-300 ${
-                    sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-                }`}>
+                <div className={`relative flex w-full max-w-xs h-full flex-1 flex-col bg-white/95 backdrop-blur-xl shadow-2xl transition-transform duration-300 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+                    }`}>
                     <div className="absolute top-4 right-4">
                         <button
                             onClick={() => setSidebarOpen(false)}
@@ -213,9 +222,8 @@ export default function AuthenticatedLayout({ header, children }: Props) {
             {/* Main content */}
             <div className="md:pl-72 flex flex-1 flex-col">
                 {/* Mobile header */}
-                <div className={`sticky top-0 z-30 bg-white/90 backdrop-blur-xl border-b transition-all duration-300 md:hidden ${
-                    isScrolled ? 'border-gray-200 shadow-sm' : 'border-transparent'
-                }`}>
+                <div className={`sticky top-0 z-30 bg-white/90 backdrop-blur-xl border-b transition-all duration-300 md:hidden ${isScrolled ? 'border-gray-200 shadow-sm' : 'border-transparent'
+                    }`}>
                     <div className="flex items-center justify-between px-4 py-3">
                         <button
                             type="button"
@@ -239,9 +247,8 @@ export default function AuthenticatedLayout({ header, children }: Props) {
                 </div>
 
                 {/* Desktop top bar */}
-                <div className={`z-2 sticky top-0 hidden md:flex h-16 flex-shrink-0 bg-white/80 backdrop-blur-xl border-b transition-all duration-300 ${
-                    isScrolled ? 'border-gray-200 shadow-sm' : 'border-transparent'
-                }`}>
+                <div className={`z-2 sticky top-0 hidden md:flex h-16 flex-shrink-0 bg-white/80 backdrop-blur-xl border-b transition-all duration-300 ${isScrolled ? 'border-gray-200 shadow-sm' : 'border-transparent'
+                    }`}>
                     <div className="flex flex-1 justify-between px-6">
                         <div className="flex flex-1 items-center max-w-lg">
                             {/* Enhanced Search */}
@@ -258,13 +265,13 @@ export default function AuthenticatedLayout({ header, children }: Props) {
                                 />
                             </div>
                         </div>
-                        
+
                         <div className="ml-4 flex items-center space-x-4">
                             <button className="relative p-2 rounded-xl text-gray-500 hover:text-blue-600 hover:bg-blue-50 transition-all duration-200">
                                 <BellIcon className="w-5 h-5" />
                                 <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-pulse" />
                             </button>
-                            
+
                             {/* Profile dropdown */}
                             <div className="relative">
                                 <button
@@ -283,11 +290,10 @@ export default function AuthenticatedLayout({ header, children }: Props) {
                                         </p>
                                         <p className="text-xs text-gray-500">Administrator</p>
                                     </div>
-                                    <ChevronDownIcon className={`h-4 w-4 text-gray-400 transition-transform duration-200 ${
-                                        profileOpen ? 'rotate-180' : ''
-                                    }`} />
+                                    <ChevronDownIcon className={`h-4 w-4 text-gray-400 transition-transform duration-200 ${profileOpen ? 'rotate-180' : ''
+                                        }`} />
                                 </button>
-                                
+
                                 {profileOpen && (
                                     <div className="absolute right-0 z-50 mt-2 w-64 origin-top-right rounded-xl bg-white/95 backdrop-blur-xl shadow-xl ring-1 ring-black/5 border border-white/20 transition-all duration-200 animate-in slide-in-from-top-2">
                                         <div className="p-4 border-b border-gray-200/50">
