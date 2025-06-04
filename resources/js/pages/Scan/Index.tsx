@@ -1,12 +1,9 @@
 import AuthenticatedLayout from '@/layouts/AuthenticatedLayout';
+import { Product } from '@/types';
 import { CameraIcon, QrCodeIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { Head, useForm } from '@inertiajs/react';
 import { BrowserMultiFormatReader } from '@zxing/library';
 import { useEffect, useRef, useState } from 'react';
-import { toast } from 'sonner';
-import { Dialog, Transition } from '@headlessui/react';
-import { Fragment } from 'react';
-import { PageProps, Product } from '@/types';
 
 export default function ScanIndex({ locations }) {
     const [scanning, setScanning] = useState(false);
@@ -15,6 +12,7 @@ export default function ScanIndex({ locations }) {
     const codeReader = useRef(new BrowserMultiFormatReader());
     // Tambahkan ref untuk menyimpan stream
     const mediaStreamRef = useRef(null);
+    const [csrfToken, setCsrfToken] = useState('');
 
     const [scanResult, setScanResult] = useState<{
         success: boolean;
@@ -34,6 +32,12 @@ export default function ScanIndex({ locations }) {
         product_id: 0,
     });
 
+    useEffect(() => {
+        // Komponen React sudah mounted → meta tag pasti ada
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+        setCsrfToken(csrfToken);
+    }, []);
+
     const handleBarcodeSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!data.barcode) return;
@@ -50,11 +54,11 @@ export default function ScanIndex({ locations }) {
                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
                     Accept: 'application/json',
                 },
+                credentials: 'same-origin', // ← tambahkan ini
                 body: JSON.stringify({ barcode: data.barcode }),
             });
 
             if (!response.ok) {
-                // Kalau status 404 atau error lain, ambil pesan dari JSON
                 const err = await response.json();
                 setScanResult({
                     success: false,
@@ -75,7 +79,7 @@ export default function ScanIndex({ locations }) {
         }
     };
 
-    const handleBarcodeSubmitViaScanner = async (barcode) => {
+    const handleBarcodeSubmitViaScanner = async (barcode: string) => {
         setScanning(true);
         try {
             const response = await fetch('/scan/product', {
@@ -84,6 +88,7 @@ export default function ScanIndex({ locations }) {
                     'Content-Type': 'application/json',
                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
                 },
+                credentials: 'same-origin', // ← juga tambahkan di sini
                 body: JSON.stringify({ barcode }),
             });
             const result = await response.json();
@@ -98,40 +103,36 @@ export default function ScanIndex({ locations }) {
 
     const startCamera = async () => {
         try {
-        setScanning(true);
-        // Dapatkan MediaStream dari kamera
-        const stream = await navigator.mediaDevices.getUserMedia({
-            video: { facingMode: "environment" },
-        });
-        // Simpan reference stream-nya
-        mediaStreamRef.current = stream;
+            setScanning(true);
+            // Dapatkan MediaStream dari kamera
+            const stream = await navigator.mediaDevices.getUserMedia({
+                video: { facingMode: 'environment' },
+            });
+            // Simpan reference stream-nya
+            mediaStreamRef.current = stream;
 
-        if (!videoRef.current) return;
-        videoRef.current.srcObject = stream;
-        await videoRef.current.play();
+            if (!videoRef.current) return;
+            videoRef.current.srcObject = stream;
+            await videoRef.current.play();
 
-        codeReader.current.decodeFromVideoDevice(
-            null,
-            videoRef.current,
-            (result, err) => {
-            if (result) {
-                const text = result.getText();
-                setScanning(false);
-                codeReader.current.reset();
+            codeReader.current.decodeFromVideoDevice(null, videoRef.current, (result, err) => {
+                if (result) {
+                    const text = result.getText();
+                    setScanning(false);
+                    codeReader.current.reset();
 
-                // Hentikan stream ketika sudah sukses memindai
-                stream.getTracks().forEach((t) => t.stop());
-                mediaStreamRef.current = null;
+                    // Hentikan stream ketika sudah sukses memindai
+                    stream.getTracks().forEach((t) => t.stop());
+                    mediaStreamRef.current = null;
 
-                setData("barcode", text);
-                handleBarcodeSubmitViaScanner(text);
-            }
-            // Jika error, kita abaikan saja (sering muncul error decode berkali-kali)
-            }
-        );
+                    setData('barcode', text);
+                    handleBarcodeSubmitViaScanner(text);
+                }
+                // Jika error, kita abaikan saja (sering muncul error decode berkali-kali)
+            });
         } catch (error) {
-        console.error("Error saat membuka kamera:", error);
-        setScanning(false);
+            console.error('Error saat membuka kamera:', error);
+            setScanning(false);
         }
     };
 
@@ -142,30 +143,30 @@ export default function ScanIndex({ locations }) {
 
         // Jika ada stream yang berjalan, hentikan track-nya
         if (mediaStreamRef.current) {
-        mediaStreamRef.current.getTracks().forEach((track) => {
-            track.stop();
-        });
-        mediaStreamRef.current = null;
+            mediaStreamRef.current.getTracks().forEach((track) => {
+                track.stop();
+            });
+            mediaStreamRef.current = null;
         }
 
         // Lepaskan srcObject dari video agar elemen tidak lagi 'mengunci' kamera
         if (videoRef.current) {
-        videoRef.current.srcObject = null;
+            videoRef.current.srcObject = null;
         }
     };
 
     useEffect(() => {
         return () => {
-        // Cleanup jika komponen di-unmount
-        codeReader.current.reset();
-        if (mediaStreamRef.current) {
-            mediaStreamRef.current.getTracks().forEach((t) => t.stop());
-            mediaStreamRef.current = null;
-        }
-        if (videoRef.current?.srcObject) {
-            videoRef.current.srcObject.getTracks().forEach((t) => t.stop());
-            videoRef.current.srcObject = null;
-        }
+            // Cleanup jika komponen di-unmount
+            codeReader.current.reset();
+            if (mediaStreamRef.current) {
+                mediaStreamRef.current.getTracks().forEach((t) => t.stop());
+                mediaStreamRef.current = null;
+            }
+            if (videoRef.current?.srcObject) {
+                videoRef.current.srcObject.getTracks().forEach((t) => t.stop());
+                videoRef.current.srcObject = null;
+            }
         };
     }, []);
 
@@ -200,7 +201,7 @@ export default function ScanIndex({ locations }) {
                                             <input
                                                 type="text"
                                                 id="barcode"
-                                                className="flex-1 rounded-l-lg border-none bg-transparent px-4 py-2 text-gray-800 placeholder-gray-400 focus:ring-0 min-w-50"
+                                                className="min-w-50 flex-1 rounded-l-lg border-none bg-transparent px-4 py-2 text-gray-800 placeholder-gray-400 focus:ring-0"
                                                 placeholder="Enter or scan barcode"
                                                 value={data.barcode}
                                                 onChange={(e) => setData('barcode', e.target.value)}
@@ -222,17 +223,17 @@ export default function ScanIndex({ locations }) {
                             {/* CAMERA SCANNER */}
                             <div className="mb-10">
                                 <h3 className="mb-5 text-lg font-bold text-blue-700">Pindai Kamera</h3>
-                                <div className="mb-4 flex space-x-4 justify-center">
+                                <div className="mb-4 flex justify-center space-x-4">
                                     <button
                                         onClick={startCamera}
-                                        className="min-w-30 flex justify-around items-center gap-1 rounded-lg bg-gradient-to-r from-green-300 to-cyan-300 px-4 py-2 font-semibold text-gray-800 shadow transition hover:brightness-110"
+                                        className="flex min-w-30 items-center justify-around gap-1 rounded-lg bg-gradient-to-r from-green-300 to-cyan-300 px-4 py-2 font-semibold text-gray-800 shadow transition hover:brightness-110"
                                     >
                                         <CameraIcon className="h-4 w-4" />
                                         Mulai
                                     </button>
                                     <button
                                         onClick={stopCamera}
-                                        className="min-w-30 flex justify-around items-center gap-1 rounded-lg bg-gradient-to-r from-red-200 to-orange-200 px-4 py-2 font-semibold text-gray-800 shadow transition hover:brightness-110"
+                                        className="flex min-w-30 items-center justify-around gap-1 rounded-lg bg-gradient-to-r from-red-200 to-orange-200 px-4 py-2 font-semibold text-gray-800 shadow transition hover:brightness-110"
                                     >
                                         <CameraIcon className="h-4 w-4" />
                                         Hentikan

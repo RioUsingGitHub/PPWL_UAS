@@ -56,7 +56,7 @@ class StockItemController extends Controller
 
         $warehouses = $warehouseses->latest()->paginate(10);
 
-        Log::debug('warehouses fetched:', $warehouses->toArray());
+        Log::info('warehouses fetched:', $warehouses->toArray());
 
         $locations = Location::query()
         ->select([

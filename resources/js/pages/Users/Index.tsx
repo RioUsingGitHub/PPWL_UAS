@@ -99,7 +99,7 @@ export default function UsersIndex({ users, roles, filters }) {
 
                     {/* FILTER BAR */}
                     <div className="mb-4 flex flex-col md:flex-row items-center justify-between bg-white/90 px-4 py-4 shadow-lg sm:rounded-xl border border-blue-100">
-                        <form onSubmit={handleFilter} className="flex flex-wrap gap-2 items-center">
+                        <form onSubmit={handleFilter} className="flex flex-col gap-2 md:flex-row md:flex-wrap md:items-center md:gap-2 w-full min-w-0">
                             <input
                                 type="text"
                                 placeholder="Search..."
@@ -120,15 +120,15 @@ export default function UsersIndex({ users, roles, filters }) {
                                 ))}
                             </select>
                             <button
-                                type="submit"
+                                type="submit"   
                                 className="rounded-md bg-gradient-to-r from-green-400 via-emerald-400 to-green-500 px-4 py-2 text-white font-semibold shadow-md hover:brightness-110 transition"
                             >
-                                Filter
+                                Search
                             </button>
                         </form>
                         <button
                             onClick={openCreate}
-                            className="mt-2 md:mt-0 rounded-md bg-gradient-to-r from-blue-400 via-cyan-400 to-blue-500 px-4 py-2 text-white font-semibold shadow-md hover:brightness-110 transition"
+                            className="mt-2 w-full md:w-auto min-w-0 rounded-md bg-gradient-to-r from-blue-400 via-cyan-500 to-blue-500 px-4 py-2 font-semibold text-white shadow-md transition hover:brightness-110 md:mt-0"
                         >
                             Create User
                         </button>

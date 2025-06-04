@@ -4,6 +4,7 @@ import { Dialog, Transition } from '@headlessui/react';
 import { Head, Link, router, useForm } from '@inertiajs/react';
 import React, { Fragment, useState } from 'react';
 import { toast } from 'sonner';
+import Barcode from "react-barcode";
 
 interface ProductsIndexProps extends PageProps {
     products: {
@@ -155,6 +156,9 @@ export default function ProductsIndex({ products, categories, filters }: Product
         toast.success('Product deleted successfully');
     };
 
+    const [isViewBarcodeOpen, setIsViewBarcodeOpen] = useState(false);
+    const [selectedBarcode, setSelectedBarcode] = useState("");
+
     const totalStock = (product: Product) => product.stock_items?.reduce((sum, item) => sum + item.quantity, 0) ?? 0;
 
     return (
@@ -172,7 +176,7 @@ export default function ProductsIndex({ products, categories, filters }: Product
                 <div className="mx-auto max-w-7xl px-4 py-2 sm:px-6 lg:px-8">
                     {/* Filter Bar */}
                     <div className="mb-4 flex flex-col items-center justify-between border border-blue-100 bg-white/90 px-4 py-4 shadow-lg sm:rounded-xl md:flex-row">
-                        <form onSubmit={handleFilter} className="flex flex-wrap items-center gap-2">
+                        <form onSubmit={handleFilter} className="flex flex-col gap-2 md:flex-row md:flex-wrap md:items-center md:gap-2 w-full min-w-0">
                             <input
                                 type="text"
                                 placeholder="Search..."
@@ -184,7 +188,7 @@ export default function ProductsIndex({ products, categories, filters }: Product
                             <select
                                 value={category}
                                 onChange={(e) => setCategory(e.target.value)}
-                                className="rounded-md border border-gray-300 px-4 py-2 shadow-sm transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                                className="w-full md:w-auto min-w-0 max-w-full rounded-md border bg-white border-gray-300 px-4 py-2 shadow-sm transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
                             >
                                 <option value="">All Categories</option>
                                 {categories.map((cat) => (
@@ -194,7 +198,7 @@ export default function ProductsIndex({ products, categories, filters }: Product
                                 ))}
                             </select>
 
-                            <label className="flex items-center space-x-1 rounded-md bg-blue-50 px-3 py-2">
+                            <label className="flex items-center space-x-1 rounded-md bg-blue-50 px-3 py-2 w-full md:w-auto">
                                 <input
                                     type="checkbox"
                                     checked={lowStock}
@@ -206,15 +210,15 @@ export default function ProductsIndex({ products, categories, filters }: Product
 
                             <button
                                 type="submit"
-                                className="rounded-md bg-gradient-to-r from-green-400 via-emerald-400 to-green-500 px-4 py-2 font-semibold text-white shadow-md transition hover:brightness-110"
+                                className="rounded-md bg-gradient-to-r from-green-400 via-emerald-400 to-green-500 px-4 py-2 font-semibold text-white shadow-md transition hover:brightness-110 md:mt-0"
                             >
-                                Filter
+                                Search
                             </button>
                         </form>
 
                         <button
                             onClick={openCreate}
-                            className="mt-2 rounded-md bg-gradient-to-r from-blue-400 via-cyan-400 to-blue-500 px-4 py-2 font-semibold text-white shadow-md transition hover:brightness-110 md:mt-0"
+                            className="mt-2 w-full md:w-auto min-w-0 rounded-md bg-gradient-to-r from-blue-400 via-cyan-500 to-blue-500 px-4 py-2 font-semibold text-white shadow-md transition hover:brightness-110 md:mt-0"
                         >
                             Create Product
                         </button>
@@ -225,7 +229,7 @@ export default function ProductsIndex({ products, categories, filters }: Product
                         <table className="min-w-full divide-y divide-blue-100">
                             <thead className="bg-gradient-to-r from-blue-50 via-cyan-50 to-blue-100">
                                 <tr>
-                                    {['Name', 'SKU', 'Barcode', 'Category', 'Price', 'Stock', 'Min Stock', 'Status', 'Actions'].map((label) => (
+                                    {['Gambar','Name', 'SKU', 'Barcode', 'Category', 'Price', 'Stock', 'Min Stock', 'Status', 'Actions'].map((label) => (
                                         <th key={label} className="px-6 py-3 text-left text-xs font-bold tracking-wider text-blue-700 uppercase">
                                             {label}
                                         </th>
@@ -238,9 +242,27 @@ export default function ProductsIndex({ products, categories, filters }: Product
                                         key={product.id}
                                         className={totalStock(product) <= product.min_stock ? 'bg-red-50/80' : 'transition hover:bg-blue-50/60'}
                                     >
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                                            <img
+                                            src={product.image ? `/storage/${product.image}` : `/storage/fallback.webp`}
+                                            alt={product.name}
+                                            className="max-w-[50px] max-h-[50px] object-contain rounded"
+                                            />
+                                        </td>
                                         <td className="px-6 py-4 font-medium whitespace-nowrap text-gray-900">{product.name}</td>
                                         <td className="px-6 py-4 whitespace-nowrap text-gray-700">{product.sku}</td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-gray-700">{product.barcode}</td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-gray-700">
+                                            {/* Wrapping barcode text dengan span yang bisa di‐click */}
+                                            <span
+                                            className="cursor-pointer text-blue-600 hover:underline"
+                                            onClick={() => {
+                                                setSelectedBarcode(product.barcode);
+                                                setIsViewBarcodeOpen(true);
+                                            }}
+                                            >
+                                            {product.barcode}
+                                            </span>
+                                        </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-gray-700">{product.category}</td>
                                         <td className="px-6 py-4 font-semibold whitespace-nowrap text-green-700">{product.price.toLocaleString()}</td>
                                         <td className="px-6 py-4 font-semibold whitespace-nowrap text-blue-700">{totalStock(product)}</td>
@@ -583,76 +605,177 @@ export default function ProductsIndex({ products, categories, filters }: Product
                             >
                                 <div className="bg-opacity-40 fixed inset-0 bg-black/60" />
                             </Transition.Child>
+
                             <div className="fixed inset-0 flex items-center justify-center p-4">
-                                <Transition.Child
-                                    as={Fragment}
-                                    enter="ease-out duration-300"
-                                    enterFrom="opacity-0 scale-95"
-                                    enterTo="opacity-100 scale-100"
-                                    leave="ease-in duration-200"
-                                    leaveFrom="opacity-100 scale-100"
-                                    leaveTo="opacity-0 scale-95"
-                                >
-                                    <Dialog.Panel className="w-full max-w-lg rounded-lg bg-white p-6 shadow-xl">
-                                        <Dialog.Title className="mb-4 text-lg font-semibold">Detail Stock</Dialog.Title>
-                                        {viewItem && (
-                                            <div className="space-y-3">
-                                                <div>
-                                                    <div className="text-xs text-gray-500">Nama Produk</div>
-                                                    <div className="font-medium">{viewItem.name}</div>
-                                                </div>
-                                                <div>
-                                                    <div className="text-xs text-gray-500">SKU</div>
-                                                    <div className="font-medium">{viewItem.sku}</div>
-                                                </div>
-                                                <div>
-                                                    <div className="text-xs text-gray-500">Barcode</div>
-                                                    <div className="font-medium">{viewItem.barcode}</div>
-                                                </div>
-                                                <div>
-                                                    <div className="text-xs text-gray-500">Description</div>
-                                                    <div className="font-medium">{viewItem.description}</div>
-                                                </div>
-                                                <div>
-                                                    <div className="text-xs text-gray-500">Price</div>
-                                                    <div className="font-medium">{viewItem.price ?? '-'}</div>
-                                                </div>
-                                                <div>
-                                                    <div className="text-xs text-gray-500">Category</div>
-                                                    <div className="font-medium">{viewItem.category}</div>
-                                                </div>
-                                                <div>
-                                                    <div className="text-xs text-gray-500">Unit</div>
-                                                    <div className="font-medium">{viewItem.unit}</div>
-                                                </div>
-                                                <div>
-                                                    <div className="text-xs text-gray-500">Total Stock</div>
-                                                    <div className="font-medium">{viewItem.total_stock !== null ? totalStock(viewItem) : '-'}</div>
-                                                </div>
-                                                <div>
-                                                    <div className="text-xs text-gray-500">Min Stock</div>
-                                                    <div className="font-medium">{viewItem.min_stock}</div>
-                                                </div>
-                                                <div>
-                                                    <div className="text-xs text-gray-500">Status</div>
-                                                    <div>
-                                                        {totalStock(viewItem) <= viewItem.min_stock ? (
-                                                            <span className="rounded bg-red-500 px-2 py-1 text-xs text-white">Low</span>
-                                                        ) : (
-                                                            <span className="rounded bg-green-100 px-2 py-1 text-xs text-green-800">OK</span>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        )}
-                                        <div className="mt-6 flex justify-end">
-                                            <button onClick={closeView} className="btn rounded bg-gray-200 px-4 py-2">
-                                                Tutup
-                                            </button>
+                            <Transition.Child
+                                as={Fragment}
+                                enter="ease-out duration-300"
+                                enterFrom="opacity-0 scale-95"
+                                enterTo="opacity-100 scale-100"
+                                leave="ease-in duration-200"
+                                leaveFrom="opacity-100 scale-100"
+                                leaveTo="opacity-0 scale-95"
+                            >
+                                <Dialog.Panel className="w-full max-w-lg rounded-lg bg-white p-6 shadow-xl">
+                                <Dialog.Title className="mb-4 text-lg font-semibold">Detail Stock</Dialog.Title>
+
+                                {viewItem && (
+                                    <div className="space-y-6">
+                                    {/* Bagian gambar, di atas dan terpusat */}
+                                    <div className="flex justify-center">
+                                        <img
+                                        src={viewItem.image ? `/storage/${viewItem.image}` : `/storage/fallback.webp`}
+                                        alt={viewItem.name}
+                                        className="max-w-[100px] max-h-[100px] object-contain rounded"
+                                        />
+                                    </div>
+
+                                    {/* Grid dua kolom untuk detail field */}
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
+                                        {/* Nama Produk */}
+                                        <div>
+                                        <div className="text-xs text-gray-500">Nama Produk</div>
+                                        <div className="font-medium">{viewItem.name}</div>
                                         </div>
-                                    </Dialog.Panel>
-                                </Transition.Child>
+
+                                        {/* SKU */}
+                                        <div>
+                                        <div className="text-xs text-gray-500">SKU</div>
+                                        <div className="font-medium">{viewItem.sku}</div>
+                                        </div>
+
+                                        {/* Barcode */}
+                                        <div>
+                                        <div className="text-xs text-gray-500">Barcode</div>
+                                        <div className="font-medium">{viewItem.barcode}</div>
+                                        </div>
+
+                                        {/* Description */}
+                                        <div>
+                                        <div className="text-xs text-gray-500">Description</div>
+                                        <div className="font-medium">{viewItem.description}</div>
+                                        </div>
+
+                                        {/* Price */}
+                                        <div>
+                                        <div className="text-xs text-gray-500">Price</div>
+                                        <div className="font-medium">{viewItem.price ?? '-'}</div>
+                                        </div>
+
+                                        {/* Category */}
+                                        <div>
+                                        <div className="text-xs text-gray-500">Category</div>
+                                        <div className="font-medium">{viewItem.category}</div>
+                                        </div>
+
+                                        {/* Unit */}
+                                        <div>
+                                        <div className="text-xs text-gray-500">Unit</div>
+                                        <div className="font-medium">{viewItem.unit}</div>
+                                        </div>
+
+                                        {/* Total Stock */}
+                                        <div>
+                                        <div className="text-xs text-gray-500">Total Stock</div>
+                                        <div className="font-medium">
+                                            {viewItem.total_stock !== null ? totalStock(viewItem) : '-'}
+                                        </div>
+                                        </div>
+
+                                        {/* Min Stock */}
+                                        <div>
+                                        <div className="text-xs text-gray-500">Min Stock</div>
+                                        <div className="font-medium">{viewItem.min_stock}</div>
+                                        </div>
+
+                                        {/* Status */}
+                                        <div>
+                                        <div className="text-xs text-gray-500">Status</div>
+                                        <div>
+                                            {totalStock(viewItem) <= viewItem.min_stock ? (
+                                            <span className="rounded bg-red-500 px-2 py-1 text-xs text-white">Low</span>
+                                            ) : (
+                                            <span className="rounded bg-green-100 px-2 py-1 text-xs text-green-800">OK</span>
+                                            )}
+                                        </div>
+                                        </div>
+                                    </div>
+                                    </div>
+                                )}
+
+                                <div className="mt-6 flex justify-end">
+                                    <button onClick={closeView} className="inline-flex justify-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                    Tutup
+                                    </button>
+                                </div>
+                                </Dialog.Panel>
+                            </Transition.Child>
                             </div>
+                        </Dialog>
+                    </Transition>
+
+                    {/* ========================= */}
+                    <Transition appear show={isViewBarcodeOpen} as={Fragment}>
+                        <Dialog
+                            as="div"
+                            className="relative z-50"
+                            onClose={() => setIsViewBarcodeOpen(false)}
+                        >
+                        {/* Backdrop */}
+                        <Transition.Child
+                            as={Fragment}
+                            enter="ease-out duration-300"
+                            enterFrom="opacity-0"
+                            enterTo="opacity-100"
+                            leave="ease-in duration-200"
+                            leaveFrom="opacity-100"
+                            leaveTo="opacity-0"
+                        >
+                            <div className="fixed inset-0 bg-black/60" />
+                        </Transition.Child>
+
+                        {/* Panel */}
+                        <div className="fixed inset-0 flex items-center justify-center p-4">
+                            <Transition.Child
+                            as={Fragment}
+                            enter="ease-out duration-300"
+                            enterFrom="opacity-0 scale-95"
+                            enterTo="opacity-100 scale-100"
+                            leave="ease-in duration-200"
+                            leaveFrom="opacity-100 scale-100"
+                            leaveTo="opacity-0 scale-95"
+                            >
+                            <Dialog.Panel className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
+                                <Dialog.Title className="mb-4 text-lg font-semibold">
+                                Detail Barcode Produk:{" "}
+                                <span className="text-indigo-600">{selectedBarcode}</span>
+                                </Dialog.Title>
+
+                                {/* Gambar Barcode dengan react-barcode */}
+                                <div className="flex flex-col items-center">
+                                <Barcode
+                                    value={selectedBarcode || ""}
+                                    format="CODE128"
+                                    width={2}
+                                    height={80}
+                                    displayValue={true}
+                                    textAlign="center"
+                                    margin={10}
+                                />
+                                </div>
+
+                                <div className="mt-6 flex justify-end">
+                                <button
+                                    type="button"
+                                    className="inline-flex justify-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                    onClick={() => setIsViewBarcodeOpen(false)}
+                                >
+                                    Tutup
+                                </button>
+                                </div>
+                            </Dialog.Panel>
+                            </Transition.Child>
+                        </div>
                         </Dialog>
                     </Transition>
                 </div>

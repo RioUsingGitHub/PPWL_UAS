@@ -497,7 +497,7 @@ export default function Login({ status, canResetPassword = true }: { status?: st
 
                         {/* Body: scrollable list with max height */}
                         <div className="p-6">
-                            <div className="py-1 grid max-h-64 gap-4 overflow-y-auto pr-2">{demoAccountItems}</div>
+                            <div className="py-1 px-2  grid max-h-64 overflow-y-scroll gap-4 pr-2">{demoAccountItems}</div>
                         </div>
 
                         {/* Footer */}
